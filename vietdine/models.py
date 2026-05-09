@@ -22,7 +22,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.GUEST
     )
-    avatar_url = models.CharField(max_length=2048, blank=True, null=True)
+    avatar_url = models.ImageField(upload_to="avatars/", blank=True, null=True)
 
     # Dùng email_phone thay vì username để authenticate
     USERNAME_FIELD = "email_phone"
@@ -41,6 +41,7 @@ class Restaurant(models.Model):
         User, on_delete=models.CASCADE, related_name="owned_restaurants"
     )
     res_name = models.CharField(max_length=255)
+    image_url = models.ImageField(upload_to="restaurant_images/", blank=True, null=True)
     address = models.CharField(max_length=512)
     latitude = models.FloatField()
     longitude = models.FloatField()
@@ -64,7 +65,7 @@ class Menu(models.Model):
     dish_name_vn = models.CharField(max_length=255)
     dish_name_jp = models.CharField(max_length=255, blank=True, null=True)
     ingredients = models.TextField(blank=True, null=True)
-    image_url = models.CharField(max_length=2048, blank=True, null=True)
+    image_url = models.ImageField(upload_to="menu_images/", blank=True, null=True)
 
     class Meta:
         db_table = "menus"
