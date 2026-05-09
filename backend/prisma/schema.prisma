@@ -46,12 +46,16 @@ model Restaurant {
   hasJpMenu    Boolean       @default(false) @map("has_jp_menu")
   hasAirCon    Boolean       @default(false) @map("has_air_con")
   hasJpStaff   Boolean       @default(false) @map("has_jp_staff")
+  imageUrl     String?       @map("image_url") @db.VarChar(255)
+  maxSeats     Int?          @map("max_seats")
+  categories   String?       @db.VarChar(255)
 
   owner        User          @relation(fields: [ownerId], references: [id])
   menus        Menu[]
   reservations Reservation[]
   reviews      Review[]
   savedBy      SavedRestaurant[]
+  promotions   Promotion[]
 
   @@map("Restaurants")
 }
@@ -63,6 +67,7 @@ model Menu {
   dishNameJp   String     @map("dish_name_jp")
   ingredients  String?
   imageUrl     String?    @default("default.png") @map("image_url") @db.VarChar(255)
+  price        Float?     @default(0)
 
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
@@ -142,4 +147,19 @@ model SavedRestaurant {
 
   @@unique([userId, restaurantId])
   @@map("SavedRestaurants")
+}
+
+model Promotion {
+  id              Int        @id @default(autoincrement()) @map("promo_id")
+  restaurantId    Int        @map("res_id")
+  title           String     @db.VarChar(255)
+  description     String?
+  discountPercent Int        @map("discount_percent")
+  startDate       DateTime   @map("start_date")
+  endDate         DateTime   @map("end_date")
+  isActive        Boolean    @default(true) @map("is_active")
+
+  restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("Promotions")
 }

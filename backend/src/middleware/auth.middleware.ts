@@ -17,3 +17,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   (req as any).user = payload;
   next();
 }
+
+export async function requireOwner(req: Request, res: Response, next: NextFunction) {
+  // requireAuth must run first to populate req.user
+  const user = (req as any).user;
+  if (!user || user.roleId !== 2) {
+    return res.status(403).json({ message: 'Forbidden: Owner access required' });
+  }
+  next();
+}
