@@ -148,9 +148,9 @@ export default function RegisterPage() {
                   />
                   <span className="text-xs text-on-surface-variant leading-relaxed">
                     ベトナム国内ユーザー向けの
-                    <a href="#" className="font-bold text-on-surface hover:underline">利用規約</a>
+                    <Link href="/terms" className="font-bold text-on-surface hover:underline">利用規約</Link>
                     および
-                    <a href="#" className="font-bold text-on-surface hover:underline">プライバシーポリシー</a>
+                    <Link href="/terms" className="font-bold text-on-surface hover:underline">プライバシーポリシー</Link>
                     に同意します。
                     <br />
                     <span className="text-outline text-[11px]">
