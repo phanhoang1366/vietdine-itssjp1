@@ -10,6 +10,7 @@ export default function NavHeader() {
   const navLinks = [
     { name: 'ホーム', path: '/' },
     { name: '保存済み', path: '/saved' },
+    { name: '予約管理', path: '/bookings' },
     { name: 'プロフィール', path: '/profile' },
   ];
 

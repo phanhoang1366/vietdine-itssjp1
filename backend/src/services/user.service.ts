@@ -1,4 +1,3 @@
-import 'server-only';
 import prisma from '../db/prisma';
 import type { RoleId } from '../lib/definitions';
 import { User } from '@prisma/client';

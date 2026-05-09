@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import NavHeader from '@/components/NavHeader';
 import SaveRestaurantButton from '@/components/SaveRestaurantButton';
+import BookingButton from '@/components/BookingButton';
 import { getRestaurantById, checkSavedStatus } from '@/actions/restaurant';
 import { MapPin, Clock, Star, Users, Snowflake, BookOpen, Languages } from 'lucide-react';
 
@@ -207,9 +208,11 @@ export default async function RestaurantDetailsPage({ params }: { params: { id: 
               <p className="text-sm text-[#504442] mb-6">
                 このレストランは予約を受け付けています。
               </p>
-              <button className="w-full py-4 bg-[#361f1a] text-white rounded-2xl font-bold hover:bg-[#4e342e] transition-colors shadow-lg">
-                予約する / Book Now
-              </button>
+              <BookingButton
+                restaurantId={restaurantId}
+                restaurantName={restaurant.name}
+                maxSeats={restaurant.maxSeats}
+              />
             </div>
           </div>
           

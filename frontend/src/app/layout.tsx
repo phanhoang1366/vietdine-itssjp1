@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -29,7 +30,9 @@ export default function RootLayout({
       </head>
       <body className={`${manrope.variable} min-h-screen font-body antialiased overflow-x-hidden`}>
         <AuthProvider>
-          {children}
+          <SocketProvider>
+            {children}
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>
