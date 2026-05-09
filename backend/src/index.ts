@@ -5,6 +5,8 @@ import prisma from './db/prisma';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import restaurantRoutes from './routes/restaurant.routes';
+import searchHistoryRoutes from './routes/search-history.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +27,8 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/search-history', searchHistoryRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server ready at: http://localhost:${PORT}`);
