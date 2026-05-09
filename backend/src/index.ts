@@ -8,6 +8,7 @@ import userRoutes from './routes/user.routes';
 import restaurantRoutes from './routes/restaurant.routes';
 import searchHistoryRoutes from './routes/search-history.routes';
 import savedRoutes from './routes/saved.routes';
+import ownerRoutes from './routes/owner.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/search-history', searchHistoryRoutes);
 app.use('/api/saved', savedRoutes);
+app.use('/api/owner', ownerRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server ready at: http://localhost:${PORT}`);
