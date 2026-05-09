@@ -29,6 +29,7 @@ model User {
   sentMessages ChatMessage[]
   reviews      Review[]
   searchHistories SearchHistory[]
+  savedRestaurants SavedRestaurant[]
 
   @@map("Users")
 }
@@ -50,6 +51,7 @@ model Restaurant {
   menus        Menu[]
   reservations Reservation[]
   reviews      Review[]
+  savedBy      SavedRestaurant[]
 
   @@map("Restaurants")
 }
@@ -127,4 +129,17 @@ model SearchHistory {
   user      User     @relation(fields: [userId], references: [id])
 
   @@map("SearchHistories")
+}
+
+model SavedRestaurant {
+  id           Int        @id @default(autoincrement()) @map("saved_id")
+  userId       Int        @map("user_id")
+  restaurantId Int        @map("res_id")
+  savedAt      DateTime   @default(now()) @map("saved_at")
+
+  user         User       @relation(fields: [userId], references: [id])
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@unique([userId, restaurantId])
+  @@map("SavedRestaurants")
 }
