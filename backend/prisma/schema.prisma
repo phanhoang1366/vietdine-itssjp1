@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int    @id @default(autoincrement()) @map("role_id")
+  name  String @map("role_name") @db.VarChar(50)
+  users User[]
+
+  @@map("Roles")
+}
+
+model User {
+  id           Int           @id @default(autoincrement()) @map("user_id")
+  emailPhone   String        @unique @map("email_phone") @db.VarChar(100)
+  passwordHash String        @map("password_hash") @db.VarChar(255)
+  fullName     String        @map("full_name")
+  roleId       Int           @map("role_id")
+  avatarUrl    String?       @map("avatar_url") @db.VarChar(255)
+
+  role         Role          @relation(fields: [roleId], references: [id])
+  restaurants  Restaurant[]
+  reservations Reservation[]
+  sentMessages ChatMessage[]
+  reviews      Review[]
+
+  @@map("Users")
+}
+
+model Restaurant {
+  id           Int           @id @default(autoincrement()) @map("res_id")
+  ownerId      Int           @map("owner_id")
+  name         String        @map("res_name")
+  address      String
+  latitude     Float?
+  longitude    Float?
+  openingHours String?       @map("opening_hours") @db.VarChar(100)
+  isClean      Boolean       @default(false) @map("is_clean")
+  hasJpMenu    Boolean       @default(false) @map("has_jp_menu")
+  hasAirCon    Boolean       @default(false) @map("has_air_con")
+  hasJpStaff   Boolean       @default(false) @map("has_jp_staff")
+
+  owner        User          @relation(fields: [ownerId], references: [id])
+  menus        Menu[]
+  reservations Reservation[]
+  reviews      Review[]
+
+  @@map("Restaurants")
+}
+
+model Menu {
+  id           Int        @id @default(autoincrement()) @map("menu_id")
+  restaurantId Int        @map("res_id")
+  dishNameVn   String     @map("dish_name_vn")
+  dishNameJp   String     @map("dish_name_jp")
+  ingredients  String?
+  imageUrl     String?    @default("default.png") @map("image_url") @db.VarChar(255)
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("Menus")
+}
+
+enum ReservationStatus {
+  Waiting
+  Confirmed
+  Cancelled
+}
+
+model Reservation {
+  id           Int               @id @default(autoincrement()) @map("rev_id")
+  userId       Int               @map("user_id")
+  restaurantId Int               @map("res_id")
+  revDatetime  DateTime          @map("rev_datetime")
+  guestCount   Int               @map("guest_count")
+  status       ReservationStatus @default(Waiting)
+
+  user         User              @relation(fields: [userId], references: [id])
+  restaurant   Restaurant        @relation(fields: [restaurantId], references: [id])
+  messages     ChatMessage[]
+
+  @@map("Reservations")
+}
+
+model ChatMessage {
+  id             Int         @id @default(autoincrement()) @map("msg_id")
+  reservationId  Int         @map("rev_id")
+  senderId       Int         @map("sender_id")
+  messageContent String      @map("message_content")
+  sentAt         DateTime    @default(now()) @map("sent_at")
+  isRead         Boolean     @default(false) @map("is_read")
+
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  sender         User        @relation(fields: [senderId], references: [id])
+
+  @@map("ChatMessages")
+}
+
+// Added from ERD diagram
+model Review {
+  id           Int        @id @default(autoincrement()) @map("review_id")
+  userId       Int        @map("user_id")
+  restaurantId Int        @map("res_id")
+  rating       Int
+  comment      String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  savedFlag    Boolean    @default(false) @map("saved_flag")
+
+  user         User       @relation(fields: [userId], references: [id])
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@map("Reviews")
+}
