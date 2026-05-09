@@ -28,6 +28,7 @@ model User {
   reservations Reservation[]
   sentMessages ChatMessage[]
   reviews      Review[]
+  searchHistories SearchHistory[]
 
   @@map("Users")
 }
@@ -115,4 +116,15 @@ model Review {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
 
   @@map("Reviews")
+}
+
+model SearchHistory {
+  id        Int      @id @default(autoincrement()) @map("history_id")
+  userId    Int      @map("user_id")
+  keyword   String?  @map("keyword")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("SearchHistories")
 }
