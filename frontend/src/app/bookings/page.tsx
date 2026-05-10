@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import NavHeader from '@/components/NavHeader';
+import { useLanguage } from '@/context/LanguageContext';
 import './bookings.css';
 
 interface Reservation {
@@ -21,9 +22,10 @@ interface Reservation {
   unreadCount: number;
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, locale: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ja-JP', {
+  const loc = locale === 'vi' ? 'vi-VN' : locale === 'en' ? 'en-US' : 'ja-JP';
+  return d.toLocaleDateString(loc, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -38,43 +40,18 @@ function formatTime(dateStr: string) {
   });
 }
 
-function getStatusLabel(status: string) {
-  switch (status) {
-    case 'Confirmed':
-      return '確定済み';
-    case 'Waiting':
-      return '確認待ち';
-    case 'Cancelled':
-      return 'キャンセル';
-    default:
-      return status;
-  }
-}
-
-function getStatusClass(status: string) {
-  switch (status) {
-    case 'Confirmed':
-      return 'confirmed';
-    case 'Waiting':
-      return 'waiting';
-    case 'Cancelled':
-      return 'cancelled';
-    default:
-      return '';
-  }
-}
-
 export default function BookingsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { t, locale } = useLanguage();
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
-  const fetchBookings = async () => {
+  async function fetchBookings() {
     try {
-      const res = await fetch('http://localhost:3001/api/bookings', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -92,10 +69,10 @@ export default function BookingsPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!confirm('予約をキャンセルしますか？')) return;
+    if (!confirm(t.bookings_cancel_confirm)) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/api/bookings/${id}/cancel`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${id}/cancel`, {
         method: 'PUT',
         credentials: 'include',
       });
@@ -107,26 +84,52 @@ export default function BookingsPage() {
     }
   };
 
+  function getStatusLabel(status: string) {
+    switch (status) {
+      case 'Confirmed':
+        return t.bookings_confirmed;
+      case 'Waiting':
+        return t.bookings_waiting;
+      case 'Cancelled':
+        return t.bookings_cancelled;
+      default:
+        return status;
+    }
+  }
+
+  function getStatusClass(status: string) {
+    switch (status) {
+      case 'Confirmed':
+        return 'confirmed';
+      case 'Waiting':
+        return 'waiting';
+      case 'Cancelled':
+        return 'cancelled';
+      default:
+        return '';
+    }
+  }
+
   return (
     <div className="bookings-page">
       <NavHeader />
       <div className="bookings-container">
         <div className="bookings-header">
-          <h1>予約管理</h1>
-          <p>あなたの予約一覧と店舗とのチャットを確認できます</p>
+          <h1>{t.bookings_title}</h1>
+          <p>{t.bookings_subtitle}</p>
         </div>
 
         {isLoading ? (
           <div className="bookings-loading">
             <div className="spinner" />
-            <span>読み込み中...</span>
+            <span>{t.bookings_loading}</span>
           </div>
         ) : reservations.length === 0 ? (
           <div className="bookings-empty">
             <span className="material-symbols-outlined">calendar_month</span>
-            <h3>予約がありません</h3>
-            <p>レストランを探して予約してみましょう</p>
-            <Link href="/">レストランを探す</Link>
+            <h3>{t.bookings_empty}</h3>
+            <p>{t.bookings_empty_sub}</p>
+            <Link href="/">{t.bookings_find}</Link>
           </div>
         ) : (
           <div className="bookings-list">
@@ -147,7 +150,7 @@ export default function BookingsPage() {
                     <div className="booking-card-meta">
                       <span className="booking-card-meta-item">
                         <span className="material-symbols-outlined">calendar_month</span>
-                        {formatDate(res.revDatetime)}
+                        {formatDate(res.revDatetime, locale)}
                       </span>
                       <span className="booking-card-meta-item">
                         <span className="material-symbols-outlined">schedule</span>
@@ -155,7 +158,7 @@ export default function BookingsPage() {
                       </span>
                       <span className="booking-card-meta-item">
                         <span className="material-symbols-outlined">group</span>
-                        {res.guestCount}名
+                        {res.guestCount}{t.bookings_guests}
                       </span>
                     </div>
                   </div>
@@ -174,7 +177,7 @@ export default function BookingsPage() {
                         className="booking-card-cancel"
                         onClick={(e) => cancelBooking(e, res.id)}
                       >
-                        キャンセル
+                        {t.bookings_cancel_btn}
                       </button>
                     )}
                   </div>

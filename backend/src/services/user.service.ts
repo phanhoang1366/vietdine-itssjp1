@@ -91,3 +91,56 @@ export async function updatePassword(id: number, passwordHash: string) {
     data: { passwordHash },
   });
 }
+
+export async function findOrCreateGoogleUser(data: {
+  email: string;
+  name: string;
+  googleId: string;
+  avatarUrl?: string;
+}) {
+  return await prisma.$transaction(async (tx: any) => {
+    // Attempt to find user by email or googleId
+    let user = await tx.user.findFirst({
+      where: {
+        OR: [
+          { emailPhone: data.email },
+          { googleId: data.googleId }
+        ]
+      }
+    });
+
+    if (user) {
+      // Update googleId if it's missing but email matched
+      if (!user.googleId) {
+        user = await tx.user.update({
+          where: { id: user.id },
+          data: { googleId: data.googleId }
+        });
+      }
+      return user;
+    }
+
+    // Ensure Customer Role exists (Role ID 1)
+    const role = await tx.role.upsert({
+      where: { id: 1 },
+      update: {},
+      create: {
+        id: 1,
+        name: 'Customer',
+      },
+    });
+
+    // Create new Google User (no password required)
+    user = await tx.user.create({
+      data: {
+        fullName: data.name,
+        emailPhone: data.email,
+        googleId: data.googleId,
+        avatarUrl: data.avatarUrl,
+        roleId: role.id,
+      },
+    });
+
+    return user;
+  });
+}

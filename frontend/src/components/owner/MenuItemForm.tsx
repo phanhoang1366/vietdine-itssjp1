@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface MenuItemData {
   id?: number;
@@ -26,6 +27,7 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
     imageUrl: '',
     price: 0,
   });
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (initialData) {
@@ -48,7 +50,7 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{initialData ? 'メニュー編集' : '新しいメニューを追加'}</h2>
+          <h2>{initialData ? t.menu_form_edit_title : t.menu_form_add_title}</h2>
           <button onClick={onCancel} className="modal-close">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -57,7 +59,7 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
         <form onSubmit={handleSubmit} className="menu-form">
           <div className="form-row">
             <div className="form-group">
-              <label>料理名（ベトナム語）<span className="required">*</span></label>
+              <label>{t.menu_form_name_vn}<span className="required">*</span></label>
               <input
                 type="text"
                 value={formData.dishNameVn}
@@ -67,30 +69,30 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
               />
             </div>
             <div className="form-group">
-              <label>料理名（日本語）<span className="required">*</span></label>
+              <label>{t.menu_form_name_jp}<span className="required">*</span></label>
               <input
                 type="text"
                 value={formData.dishNameJp}
                 onChange={(e) => setFormData({ ...formData, dishNameJp: e.target.value })}
-                placeholder="牛肉フォー"
+                placeholder={t.menu_placeholder_name}
                 required
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label>原材料・食材</label>
+            <label>{t.menu_form_ingredients}</label>
             <textarea
               value={formData.ingredients}
               onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-              placeholder="米麺、牛肉、ハーブ、スパイス..."
+              placeholder={t.menu_placeholder_ingredients}
               rows={3}
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>価格（VND）</label>
+              <label>{t.menu_form_price}</label>
               <input
                 type="number"
                 value={formData.price}
@@ -100,7 +102,7 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
               />
             </div>
             <div className="form-group">
-              <label>画像URL</label>
+              <label>{t.menu_form_image_url}</label>
               <input
                 type="text"
                 value={formData.imageUrl}
@@ -118,10 +120,10 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
 
           <div className="form-actions">
             <button type="button" onClick={onCancel} className="btn-cancel">
-              キャンセル
+              {t.common_cancel}
             </button>
             <button type="submit" disabled={isSubmitting} className="btn-submit">
-              {isSubmitting ? '保存中...' : (initialData ? '更新する' : '追加する')}
+              {isSubmitting ? t.menu_form_btn_saving : (initialData ? t.menu_form_btn_update : t.menu_form_btn_add)}
             </button>
           </div>
         </form>

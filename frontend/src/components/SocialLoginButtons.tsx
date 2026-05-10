@@ -1,8 +1,43 @@
 'use client';
 
+import { useGoogleLogin } from '@react-oauth/google';
+import { verifyGoogleToken } from '@/actions/auth';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function SocialLoginButtons() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        const res = await verifyGoogleToken(tokenResponse.access_token);
+        if (res.success) {
+          window.location.href = res.user.roleId === 2 ? '/owner' : '/';
+        } else {
+          alert(res.message);
+        }
+      } catch (err) {
+        alert(t.auth_google_err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      alert(t.auth_google_fail);
+    },
+  });
+
   const handleSocial = (provider: string) => {
-    alert(`${provider}ログインは近日公開予定です`);
+    if (provider === 'Google') {
+      googleLogin();
+    } else {
+      alert(t.auth_provider_soon.replace('{provider}', provider));
+    }
   };
 
   return (
@@ -13,8 +48,8 @@ export default function SocialLoginButtons() {
           <div className="w-full border-t border-outline-variant/30"></div>
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-transparent px-4 text-outline font-medium tracking-widest uppercase">
-            または次で続ける
+          <span className="bg-white px-4 text-[#a0938f] text-[10px] font-bold tracking-widest uppercase">
+            {t.auth_or_continue}
           </span>
         </div>
       </div>
@@ -24,7 +59,8 @@ export default function SocialLoginButtons() {
         <button
           type="button"
           onClick={() => handleSocial('Google')}
-          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-surface-container-low border border-outline-variant/20 rounded-xl hover:bg-surface-container-high transition-colors active:scale-95"
+          disabled={loading}
+          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-[#f8f6f4] border border-[#f0ede8] rounded-xl hover:bg-[#f0ede8] transition-colors active:scale-95 disabled:opacity-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -51,7 +87,7 @@ export default function SocialLoginButtons() {
         <button
           type="button"
           onClick={() => handleSocial('Facebook')}
-          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-surface-container-low border border-outline-variant/20 rounded-xl hover:bg-surface-container-high transition-colors active:scale-95"
+          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-[#f8f6f4] border border-[#f0ede8] rounded-xl hover:bg-[#f0ede8] transition-colors active:scale-95"
         >
           <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />

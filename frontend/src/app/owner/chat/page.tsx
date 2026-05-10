@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 import { useSocket } from '@/context/SocketContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Reservation {
   id: number;
@@ -40,26 +41,26 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('ja-JP', {
+function formatDate(dateStr: string, locale: string) {
+  return new Date(dateStr).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   });
 }
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString('ja-JP', {
+function formatTime(dateStr: string, locale: string) {
+  return new Date(dateStr).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
   });
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(status: string, t: any) {
   switch (status) {
-    case 'Confirmed': return '確定';
-    case 'Waiting': return '保留中';
-    case 'Cancelled': return 'キャンセル';
+    case 'Confirmed': return t.owner_res_action_confirm;
+    case 'Waiting': return t.owner_res_tab_all;
+    case 'Cancelled': return t.owner_res_action_reject;
     default: return status;
   }
 }
@@ -81,6 +82,7 @@ export default function OwnerChatPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const { t, locale } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,9 +98,9 @@ export default function OwnerChatPage() {
     fetchReservations();
   }, []);
 
-  const fetchReservations = async () => {
+  async function fetchReservations() {
     try {
-      const res = await fetch('http://localhost:3001/api/owner/reservations', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -111,7 +113,7 @@ export default function OwnerChatPage() {
           data.reservations.map(async (r: Reservation) => {
             try {
               const msgRes = await fetch(
-                `http://localhost:3001/api/chat/${r.id}/messages`,
+                `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${r.id}/messages`,
                 { credentials: 'include' }
               );
               if (msgRes.ok) {
@@ -147,10 +149,10 @@ export default function OwnerChatPage() {
     setMessages([]);
     setIsTyping(false);
 
-    const fetchMessages = async () => {
+    async function fetchMessages() {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/chat/${selectedId}/messages`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${selectedId}/messages`,
           { credentials: 'include' }
         );
         if (res.ok) {
@@ -159,7 +161,7 @@ export default function OwnerChatPage() {
         }
 
         // Mark as read
-        await fetch(`http://localhost:3001/api/chat/${selectedId}/read`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${selectedId}/read`, {
           method: 'PUT',
           credentials: 'include',
         });
@@ -167,7 +169,7 @@ export default function OwnerChatPage() {
         // Clear unread count
         setUnreadCounts((prev) => {
           const next = { ...prev };
-          delete next[selectedId];
+          delete next[selectedId as number];
           return next;
         });
       } catch (err) {
@@ -256,7 +258,7 @@ export default function OwnerChatPage() {
     } else {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/chat/${selectedId}/messages`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${selectedId}/messages`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -277,7 +279,7 @@ export default function OwnerChatPage() {
   // Update reservation status
   const updateStatus = async (id: number, status: 'Confirmed' | 'Cancelled') => {
     try {
-      const res = await fetch(`http://localhost:3001/api/owner/reservations/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -305,7 +307,7 @@ export default function OwnerChatPage() {
       <OwnerSidebar />
       <main className="owner-main">
         <div className="owner-topbar">
-          <h1>予約・チャット管理</h1>
+          <h1>{t.owner_chat_title}</h1>
           <div className="topbar-actions">
             <button className="topbar-btn">
               <span className="material-symbols-outlined">notifications</span>
@@ -321,7 +323,7 @@ export default function OwnerChatPage() {
                 <span className="material-symbols-outlined">search</span>
                 <input
                   type="text"
-                  placeholder="予約番号、または顧客名で検索"
+                  placeholder={t.owner_chat_search_placeholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -329,8 +331,8 @@ export default function OwnerChatPage() {
             </div>
 
             <div className="chat-list-subheader">
-              <h2>予約一覧</h2>
-              <span className="chat-list-count">{filteredReservations.length}件</span>
+              <h2>{t.owner_chat_list_title}</h2>
+              <span className="chat-list-count">{t.owner_chat_items_count.replace('{count}', filteredReservations.length.toString())}</span>
             </div>
 
             <div className="chat-conversation-list">
@@ -341,7 +343,7 @@ export default function OwnerChatPage() {
               ) : filteredReservations.length === 0 ? (
                 <div className="empty-state" style={{ padding: '40px 16px' }}>
                   <span className="material-symbols-outlined">event_busy</span>
-                  <h3>予約がありません</h3>
+                  <h3>{t.owner_chat_list_empty}</h3>
                 </div>
               ) : (
                 filteredReservations.map((res) => (
@@ -359,12 +361,12 @@ export default function OwnerChatPage() {
                     <div className="conv-info">
                       <div className="conv-name">{res.user.fullName}</div>
                       <div className="conv-meta">
-                        {formatDate(res.revDatetime)} {formatTime(res.revDatetime)} ・ {res.guestCount}名
+                        {formatDate(res.revDatetime, locale)} {formatTime(res.revDatetime, locale)} ・ {t.owner_res_guests_label.replace('{count}', res.guestCount.toString())}
                       </div>
                     </div>
                     <div className="conv-right">
                       <span className={`res-status ${getStatusClass(res.status)}`}>
-                        {getStatusLabel(res.status)}
+                        {getStatusLabel(res.status, t)}
                       </span>
                       {unreadCounts[res.id] && (
                         <span className="conv-unread-count">{unreadCounts[res.id]}</span>
@@ -381,8 +383,8 @@ export default function OwnerChatPage() {
             {selectedId === null ? (
               <div className="chat-detail-empty">
                 <span className="material-symbols-outlined">forum</span>
-                <h3>チャットを選択</h3>
-                <p>左側の予約一覧からチャットを開始してください</p>
+                <h3>{t.owner_chat_select_prompt}</h3>
+                <p>{t.owner_chat_select_sub}</p>
               </div>
             ) : (
               <>
@@ -396,10 +398,10 @@ export default function OwnerChatPage() {
                     </div>
                     <div>
                       <div className="chat-detail-name">
-                        {selectedReservation?.user.fullName || ''}様
+                        {selectedReservation?.user.fullName || ''}{t.owner_chat_user_suffix}
                       </div>
                       <div className="chat-detail-status">
-                        <span className="online-dot" /> オンライン
+                        <span className="online-dot" /> {t.owner_chat_online}
                       </div>
                     </div>
                   </div>
@@ -411,14 +413,14 @@ export default function OwnerChatPage() {
                         style={{ padding: '8px 16px', fontSize: '0.82rem', borderRadius: '8px' }}
                         onClick={() => updateStatus(selectedId, 'Confirmed')}
                       >
-                        確認する
+                        {t.owner_res_action_confirm}
                       </button>
                       <button
                         className="btn-cancel"
                         style={{ padding: '8px 16px', fontSize: '0.82rem', borderRadius: '8px' }}
                         onClick={() => updateStatus(selectedId, 'Cancelled')}
                       >
-                        拒否
+                        {t.owner_res_action_reject}
                       </button>
                     </div>
                   )}
@@ -433,11 +435,11 @@ export default function OwnerChatPage() {
                   ) : messages.length === 0 ? (
                     <div className="chat-detail-empty-msg">
                       <span className="material-symbols-outlined">chat_bubble_outline</span>
-                      <p>まだメッセージがありません</p>
+                      <p>{t.owner_chat_no_messages}</p>
                     </div>
                   ) : (
                     messages.map((msg) => {
-                      const msgDate = new Date(msg.sentAt).toLocaleDateString('ja-JP', {
+                      const msgDate = new Date(msg.sentAt).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
                         month: 'short',
                         day: 'numeric',
                       });
@@ -459,7 +461,7 @@ export default function OwnerChatPage() {
                           <div className={`owner-chat-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
                             <div className={`owner-chat-bubble ${isSent ? 'sent' : 'received'}`}>
                               <div>{msg.messageContent}</div>
-                              <div className="owner-chat-time">{formatTime(msg.sentAt)}</div>
+                              <div className="owner-chat-time">{formatTime(msg.sentAt, locale)}</div>
                             </div>
                           </div>
                         </div>
@@ -474,7 +476,7 @@ export default function OwnerChatPage() {
                         <span style={{ width: 6, height: 6, background: '#8a7a74', borderRadius: '50%', animation: 'typingBounce 1.4s infinite 0.2s' }} />
                         <span style={{ width: 6, height: 6, background: '#8a7a74', borderRadius: '50%', animation: 'typingBounce 1.4s infinite 0.4s' }} />
                       </div>
-                      入力中...
+                      {t.owner_chat_typing}
                     </div>
                   )}
 
@@ -489,7 +491,7 @@ export default function OwnerChatPage() {
                     </button>
                     <input
                       type="text"
-                      placeholder="メッセージを入力..."
+                      placeholder={t.owner_chat_input_placeholder}
                       value={newMessage}
                       onChange={handleInputChange}
                     />
@@ -498,7 +500,7 @@ export default function OwnerChatPage() {
                       className="chat-detail-send-btn"
                       disabled={!newMessage.trim()}
                     >
-                      送信
+                      {t.owner_chat_send}
                     </button>
                   </form>
                 )}

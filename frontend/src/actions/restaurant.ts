@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
 async function getAuthHeaders() {
   const cookieStore = await cookies();
@@ -12,6 +12,13 @@ async function getAuthHeaders() {
     'Content-Type': 'application/json',
     ...(session ? { Cookie: `session=${session}` } : {})
   };
+}
+
+export async function getRestaurants() {
+  const res = await fetch(`${API_URL}/restaurants`, { cache: 'no-store' });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.data;
 }
 
 export async function getRestaurantById(id: number) {

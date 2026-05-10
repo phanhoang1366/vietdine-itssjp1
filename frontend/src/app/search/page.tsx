@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
 
-export default function SearchPage({
+export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const q = searchParams.q;
+  const params = await searchParams;
+  const q = params.q;
 
   if (q) {
     // If there is a query, redirect to map for results
@@ -15,3 +16,4 @@ export default function SearchPage({
     redirect('/');
   }
 }
+

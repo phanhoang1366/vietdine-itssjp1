@@ -18,10 +18,11 @@ model Role {
 model User {
   id           Int           @id @default(autoincrement()) @map("user_id")
   emailPhone   String        @unique @map("email_phone") @db.VarChar(100)
-  passwordHash String        @map("password_hash") @db.VarChar(255)
+  passwordHash String?       @map("password_hash") @db.VarChar(255)
   fullName     String        @map("full_name")
   roleId       Int           @map("role_id")
   avatarUrl    String?       @map("avatar_url") @db.VarChar(255)
+  googleId     String?       @unique @map("google_id") @db.VarChar(255)
 
   role         Role          @relation(fields: [roleId], references: [id])
   restaurants  Restaurant[]

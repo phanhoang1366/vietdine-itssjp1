@@ -5,6 +5,7 @@ import Link from 'next/link';
 import NavHeader from '@/components/NavHeader';
 import { useSocket } from '@/context/SocketContext';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import '../bookings.css';
 
 interface Message {
@@ -49,6 +50,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
   const [reservation, setReservation] = useState<ReservationDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const { t, locale } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -59,13 +61,13 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (isNaN(reservationId)) return;
 
-    const fetchData = async () => {
+    async function fetchData() {
       try {
         const [resRes, msgRes] = await Promise.all([
-          fetch(`http://localhost:3001/api/bookings/${reservationId}`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${reservationId}`, {
             credentials: 'include',
           }),
-          fetch(`http://localhost:3001/api/chat/${reservationId}/messages`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/messages`, {
             credentials: 'include',
           }),
         ]);
@@ -89,7 +91,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     fetchData();
 
     // Mark messages as read
-    fetch(`http://localhost:3001/api/chat/${reservationId}/read`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/read`, {
       method: 'PUT',
       credentials: 'include',
     }).catch(() => {});
@@ -164,7 +166,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
       socket.emit('send_message', { reservationId, content });
     } else {
       try {
-        await fetch(`http://localhost:3001/api/chat/${reservationId}/messages`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -177,14 +179,14 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
   };
 
   const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString('ja-JP', {
+    return new Date(dateStr).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ja-JP', {
+    return new Date(dateStr).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
       month: 'short',
       day: 'numeric',
     });
@@ -196,7 +198,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
         <NavHeader />
         <div className="bookings-loading">
           <div className="spinner" />
-          <span>読み込み中...</span>
+          <span>{t.common_loading}</span>
         </div>
       </div>
     );
@@ -208,8 +210,8 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
         <NavHeader />
         <div className="bookings-empty">
           <span className="material-symbols-outlined">error_outline</span>
-          <h3>予約が見つかりません</h3>
-          <Link href="/bookings">予約一覧に戻る</Link>
+          <h3>{t.bookings_not_found}</h3>
+          <Link href="/bookings">{t.bookings_back_to_list}</Link>
         </div>
       </div>
     );
@@ -230,10 +232,10 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
           <div className="chat-header-info">
             <h2>{reservation.restaurant.name}</h2>
             <p>
-              {new Date(reservation.revDatetime).toLocaleDateString('ja-JP')} ・
-              {reservation.guestCount}名 ・
+              {new Date(reservation.revDatetime).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US')} ・
+              {t.owner_res_guests_label.replace('{count}', reservation.guestCount.toString())} ・
               <span className={`booking-status ${reservation.status === 'Confirmed' ? 'confirmed' : reservation.status === 'Waiting' ? 'waiting' : 'cancelled'}`} style={{ marginLeft: '4px', display: 'inline', padding: '2px 8px', fontSize: '0.72rem' }}>
-                {reservation.status === 'Confirmed' ? '確定' : reservation.status === 'Waiting' ? '確認待ち' : 'キャンセル'}
+                {reservation.status === 'Confirmed' ? t.owner_res_action_confirm : reservation.status === 'Waiting' ? t.bookings_wait_confirmation : t.owner_res_action_reject}
               </span>
             </p>
           </div>
@@ -245,9 +247,9 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
             <div className="chat-empty">
               <span className="material-symbols-outlined">chat_bubble_outline</span>
               <p>
-                メッセージがまだありません。
+                {t.owner_chat_no_messages}
                 <br />
-                お店に質問や要望を送りましょう。
+                {t.bookings_chat_empty_sub}
               </p>
             </div>
           ) : (
@@ -282,7 +284,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
               <div className="typing-dots">
                 <span /><span /><span />
               </div>
-              入力中...
+              {t.owner_chat_typing}
             </div>
           )}
 
@@ -295,7 +297,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
             <input
               type="text"
               className="chat-input"
-              placeholder="メッセージを入力..."
+              placeholder={t.owner_chat_input_placeholder}
               value={newMessage}
               onChange={handleInputChange}
             />

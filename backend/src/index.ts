@@ -24,9 +24,20 @@ const server = createServer(app);
 initializeSocket(server);
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow Next.js frontend
-  credentials: true, // Allow cookies to be sent
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());

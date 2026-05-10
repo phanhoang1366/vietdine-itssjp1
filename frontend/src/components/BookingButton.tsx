@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import BookingModal from './BookingModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface BookingButtonProps {
   restaurantId: number;
@@ -15,6 +16,7 @@ export default function BookingButton({
   maxSeats,
 }: BookingButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <>
@@ -25,7 +27,7 @@ export default function BookingButton({
         <span className="material-symbols-outlined" style={{ verticalAlign: 'middle', marginRight: '8px', fontSize: '20px' }}>
           calendar_month
         </span>
-        今すぐ予約する
+        {t.booking_reserve_now}
       </button>
       <BookingModal
         restaurantId={restaurantId}

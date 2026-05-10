@@ -31,7 +31,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
 
     // Connect to Socket.IO server
-    const newSocket = io('http://localhost:3001', {
+    const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });

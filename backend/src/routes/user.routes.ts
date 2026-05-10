@@ -103,7 +103,7 @@ router.post('/change-password', requireAuth, async (req: Request, res: Response)
     const { currentPassword, newPassword } = validated.data;
     const user = await findUserById(session.userId);
 
-    if (!user || !compareSync(currentPassword, user.passwordHash)) {
+    if (!user || !user.passwordHash || !compareSync(currentPassword, user.passwordHash)) {
       return res.status(401).json({ message: '現在のパスワードが正しくありません' });
     }
 

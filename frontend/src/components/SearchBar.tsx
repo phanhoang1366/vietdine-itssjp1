@@ -1,21 +1,29 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Search, X, Bell, SlidersHorizontal } from 'lucide-react';
+import { Search, X, Bell, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import SearchOverlay from './SearchOverlay';
+import { useLanguage } from '@/context/LanguageContext';
+import { localeNames, localeFlags, type Locale } from '@/lib/i18n';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const router = useRouter();
   const searchRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+  const { locale, setLocale, t } = useLanguage();
 
   // Handle click outside to close overlay
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsFocused(false);
+      }
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setLangOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -26,14 +34,12 @@ export default function SearchBar() {
     e.preventDefault();
     if (query.trim()) {
       setIsFocused(false);
-      // In a real app, we'd also save this to history API here
       router.push(`/map?q=${encodeURIComponent(query)}`);
     }
   };
 
   const handleClear = () => {
     setQuery('');
-    // keep focus
     const input = document.getElementById('main-search-input');
     if (input) input.focus();
   };
@@ -64,7 +70,7 @@ export default function SearchBar() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsFocused(true)}
-              placeholder="フォー"
+              placeholder={t.map_search_placeholder}
               className="flex-1 bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant"
             />
             {query && (
@@ -80,12 +86,41 @@ export default function SearchBar() {
         </div>
 
         {/* Right Icons */}
-        <div className="flex items-center justify-end w-48 gap-4 text-on-surface-variant">
+        <div className="flex items-center justify-end w-48 gap-3 text-on-surface-variant">
+          {/* Language Selector */}
+          <div ref={langRef} className="relative">
+            <button
+              onClick={() => setLangOpen(!langOpen)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-surface-container transition-colors text-sm font-bold"
+            >
+              <span>{localeFlags[locale]}</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+
+            {langOpen && (
+              <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-outline-variant/30 overflow-hidden z-[60] min-w-[160px]">
+                {(['ja', 'vi', 'en'] as Locale[]).map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => {
+                      setLocale(loc);
+                      setLangOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium hover:bg-surface-container-low transition-colors ${
+                      locale === loc ? 'bg-surface-container-low text-secondary font-bold' : 'text-on-surface'
+                    }`}
+                  >
+                    <span className="text-lg">{localeFlags[loc]}</span>
+                    <span>{localeNames[loc]}</span>
+                    {locale === loc && <span className="ml-auto text-secondary">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
             <Bell className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
-            <SlidersHorizontal className="w-5 h-5" />
           </button>
         </div>
       </header>
@@ -99,3 +134,4 @@ export default function SearchBar() {
     </div>
   );
 }
+

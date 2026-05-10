@@ -1,10 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+import Link from 'next/link';
 
 export default function TermsPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,9 +35,9 @@ export default function TermsPage() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center px-6 pt-6 pb-16">
         <div className="w-full max-w-3xl">
-          <h1 className="text-3xl font-extrabold text-primary mb-6">利用規約</h1>
+          <h1 className="text-3xl font-extrabold text-primary mb-6">{t.terms_title}</h1>
           <p className="text-on-surface-variant text-sm leading-relaxed mb-8">
-            VietDineをご利用いただきありがとうございます。本規約は、当サービスの利用条件を定めるものです。
+            {t.terms_subtitle}
           </p>
           <hr className="border-outline-variant/30 mb-10" />
 
@@ -124,29 +126,29 @@ export default function TermsPage() {
           </div>
 
           {/* Bottom Action Area */}
-          <div className="mt-16 bg-primary-container rounded-2xl p-8 flex flex-col items-center text-center shadow-sm">
-            <h3 className="text-on-primary-container text-xl font-bold mb-3">規約に同意して始めましょう</h3>
-            <p className="text-on-primary-container/80 text-xs mb-8 max-w-md leading-relaxed">
-              登録を完了することで、上記の利用規約およびプライバシーポリシーに同意したものとみなされます。
+          <div className="mt-16 bg-[#3d2e28] rounded-2xl p-8 flex flex-col items-center text-center shadow-sm">
+            <h3 className="text-white text-xl font-bold mb-3">{t.auth_register_terms}</h3>
+            <p className="text-white/80 text-xs mb-8 max-w-md leading-relaxed">
+              {t.auth_register_terms_sub}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Link 
                 href="/register" 
-                className="bg-secondary text-on-secondary hover:bg-secondary/90 font-bold py-3 px-8 rounded-xl flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
+                className="bg-[#8a6b32] text-white hover:bg-[#7a5e2a] font-bold py-3 px-8 rounded-xl flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
               >
-                同意して登録に戻る
+                {t.terms_agree_btn}
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </Link>
-              <button className="bg-surface-container-highest/10 border border-on-primary-container/20 text-on-primary-container hover:bg-on-primary-container/10 font-bold py-3 px-8 rounded-xl flex items-center justify-center gap-2 transition-colors w-full sm:w-auto">
-                PDFでダウンロード
+              <button className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-colors w-full sm:w-auto">
+                {t.terms_download_btn}
               </button>
             </div>
           </div>
 
           {/* Footer Info */}
           <footer className="mt-12 flex flex-col items-center justify-center text-[10px] text-outline tracking-wider gap-1">
-            <p>最終更新日：2024年5月20日</p>
-            <p>© 2024 VietDine Japan. All rights reserved.</p>
+            <p>{t.terms_updated_at.replace('{date}', '2024/05/20')}</p>
+            <p>© 2024 VietDine. All rights reserved.</p>
           </footer>
         </div>
       </main>

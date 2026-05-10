@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 import StatCard from '@/components/owner/StatCard';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface DashboardData {
   restaurant: any;
@@ -17,7 +18,7 @@ interface DashboardData {
   };
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, t: any, locale: string) {
   const date = new Date(dateStr);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
@@ -25,10 +26,10 @@ function formatDate(dateStr: string) {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const isTomorrow = date.toDateString() === tomorrow.toDateString();
 
-  const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-  if (isToday) return `本日 ${timeStr}`;
-  if (isTomorrow) return `明日 ${timeStr}`;
-  return `${date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} ${timeStr}`;
+  const timeStr = date.toLocaleTimeString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  if (isToday) return `${t.common_today} ${timeStr}`;
+  if (isTomorrow) return `${t.common_tomorrow} ${timeStr}`;
+  return `${date.toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', { month: 'short', day: 'numeric' })} ${timeStr}`;
 }
 
 function getInitials(name: string) {
@@ -49,11 +50,11 @@ function getStatusClass(status: string) {
   }
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(status: string, t: any) {
   switch (status) {
-    case 'Confirmed': return '確定済み';
-    case 'Waiting': return '確認待ち';
-    case 'Cancelled': return 'キャンセル';
+    case 'Confirmed': return t.owner_res_action_confirm;
+    case 'Waiting': return t.owner_res_tab_all; // or a specific waiting status if available
+    case 'Cancelled': return t.owner_res_action_reject;
     default: return status;
   }
 }
@@ -61,14 +62,15 @@ function getStatusLabel(status: string) {
 export default function OwnerDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { t, locale } = useLanguage();
 
   useEffect(() => {
     fetchDashboard();
   }, []);
 
-  const fetchDashboard = async () => {
+  async function fetchDashboard() {
     try {
-      const res = await fetch('http://localhost:3001/api/owner/dashboard', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/dashboard`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -89,7 +91,7 @@ export default function OwnerDashboard() {
         <main className="owner-main">
           <div className="owner-loading">
             <div className="spinner" />
-            <span>読み込み中...</span>
+            <span>{t.common_loading}</span>
           </div>
         </main>
       </div>
@@ -105,13 +107,13 @@ export default function OwnerDashboard() {
       <main className="owner-main">
         {/* Top Bar */}
         <div className="owner-topbar">
-          <h1>オーナー管理パネル</h1>
+          <h1>{t.owner_dashboard_title}</h1>
           <div className="topbar-actions">
             <button className="topbar-btn">
-              <span className="material-symbols-outlined">language</span>
+              <span className="material-symbols-outlined" style={{ fontWeight: 300 }}>language</span>
             </button>
             <button className="topbar-btn">
-              <span className="material-symbols-outlined">account_circle</span>
+              <span className="material-symbols-outlined" style={{ fontWeight: 300 }}>account_circle</span>
             </button>
           </div>
         </div>
@@ -122,14 +124,14 @@ export default function OwnerDashboard() {
             <StatCard
               icon="event_note"
               value={stats?.totalReservations?.toString() || '0'}
-              label="総予約数"
+              label={t.owner_stat_total_res}
               trend="+12%"
               trendUp={true}
             />
             <StatCard
               icon="payments"
               value="45.2M ₫"
-              label="週次売上"
+              label={t.owner_stat_weekly_sales}
               trend="+8%"
               trendUp={true}
             />
@@ -144,12 +146,12 @@ export default function OwnerDashboard() {
           {/* Active Promotion Banner */}
           {stats?.activePromotion && (
             <div className="promo-banner">
-              <p className="promo-banner-label">実施中のプロモーション</p>
+              <p className="promo-banner-label">{t.owner_promo_active_label}</p>
               <p className="promo-banner-title">
                 {stats.activePromotion.title} - {stats.activePromotion.discountPercent}% OFF
               </p>
               <Link href="/owner/promotions" className="promo-banner-btn">
-                更新する
+                {t.owner_promo_update}
               </Link>
             </div>
           )}
@@ -159,9 +161,9 @@ export default function OwnerDashboard() {
             {/* Recent Reservations */}
             <div className="dashboard-section">
               <div className="section-header">
-                <h2>最近の予約</h2>
+                <h2>{t.owner_recent_res_title}</h2>
                 <Link href="/owner/reservations" className="section-link">
-                  すべて表示
+                  {t.owner_recent_res_view_all}
                 </Link>
               </div>
               <div className="reservation-list">
@@ -174,11 +176,11 @@ export default function OwnerDashboard() {
                       <div className="res-details">
                         <p className="res-name">{rev.user.fullName}</p>
                         <p className="res-meta">
-                          {rev.guestCount}名様 • {formatDate(rev.revDatetime)}
+                          {t.owner_res_guests_label.replace('{count}', rev.guestCount.toString())} • {formatDate(rev.revDatetime, t, locale)}
                         </p>
                       </div>
                       <span className={`res-status ${getStatusClass(rev.status)}`}>
-                        {getStatusLabel(rev.status)}
+                        {getStatusLabel(rev.status, t)}
                       </span>
                       <button className="res-actions-btn">
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>more_vert</span>
@@ -188,8 +190,8 @@ export default function OwnerDashboard() {
                 ) : (
                   <div className="empty-state">
                     <span className="material-symbols-outlined">calendar_month</span>
-                    <h3>予約はまだありません</h3>
-                    <p>新しい予約が入ると、ここに表示されます</p>
+                    <h3>{t.owner_recent_res_empty}</h3>
+                    <p>{t.owner_recent_res_empty_sub}</p>
                   </div>
                 )}
               </div>
@@ -198,7 +200,7 @@ export default function OwnerDashboard() {
             {/* Restaurant Info */}
             <div className="dashboard-section">
               <div className="section-header">
-                <h2>店舗情報</h2>
+                <h2>{t.owner_info_title}</h2>
               </div>
               <div className="restaurant-info">
                 {restaurant?.imageUrl && (
@@ -215,18 +217,18 @@ export default function OwnerDashboard() {
                 )}
 
                 <div className="info-item">
-                  <span className="info-label">所在地</span>
-                  <span className="info-value">{restaurant?.address || '未設定'}</span>
+                  <span className="info-label">{t.owner_info_address}</span>
+                  <span className="info-value">{restaurant?.address || t.owner_info_not_set}</span>
                 </div>
 
                 <div className="info-item">
-                  <span className="info-label">営業時間</span>
-                  <span className="info-value">{restaurant?.openingHours || '未設定'}</span>
+                  <span className="info-label">{t.owner_info_hours}</span>
+                  <span className="info-value">{restaurant?.openingHours || t.owner_info_not_set}</span>
                 </div>
 
                 {restaurant?.categories && (
                   <div className="info-item">
-                    <span className="info-label">料理カテゴリー</span>
+                    <span className="info-label">{t.owner_info_categories}</span>
                     <div className="info-tags">
                       {restaurant.categories.split(',').map((cat: string, i: number) => (
                         <span key={i} className="info-tag">{cat.trim()}</span>
@@ -236,14 +238,14 @@ export default function OwnerDashboard() {
                 )}
 
                 <div className="info-item">
-                  <span className="info-label">最大席数</span>
+                  <span className="info-label">{t.owner_info_max_seats}</span>
                   <span className="info-seats">
-                    {restaurant?.maxSeats || '—'} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#5a4a44' }}>席</span>
+                    {restaurant?.maxSeats || '—'} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: '#5a4a44' }}>{t.owner_info_seats_unit}</span>
                   </span>
                 </div>
 
                 <button className="edit-profile-btn">
-                  プロフィール詳細を編集
+                  {t.owner_info_edit_btn}
                 </button>
               </div>
             </div>

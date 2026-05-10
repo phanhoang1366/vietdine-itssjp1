@@ -6,7 +6,7 @@
 .owner-layout {
   display: flex;
   min-height: 100vh;
-  background: #f8f6f3;
+  background: #fdfbf8;
 }
 
 .owner-main {
@@ -20,9 +20,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 40px;
-  background: #ffffff;
-  border-bottom: 1px solid #eee8e3;
+  padding: 24px 40px;
+  background: transparent;
 }
 
 .owner-topbar h1 {
@@ -69,8 +68,7 @@
   left: 0;
   width: 260px;
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid #eee8e3;
+  background: transparent;
   display: flex;
   flex-direction: column;
   z-index: 50;
@@ -93,22 +91,18 @@
   align-items: center;
   gap: 12px;
   padding: 16px 24px;
-  margin: 0 12px 8px;
-  border-radius: 12px;
-  background: #faf7f2;
+  margin: 0;
+  background: transparent;
 }
 
 .profile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6d4c41, #4e342e);
-  color: white;
+  background: #f0ede8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.9rem;
   flex-shrink: 0;
 }
 
@@ -133,7 +127,7 @@
 
 .sidebar-nav {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -143,12 +137,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
+  padding: 12px 16px 12px 24px;
   color: #5a4a44;
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
+  border-left: 4px solid transparent;
   transition: all 0.2s;
 }
 
@@ -158,9 +152,10 @@
 }
 
 .sidebar-nav-item.active {
-  background: #f5f0eb;
+  background: #f0ebe1;
   color: #2d1f1a;
   font-weight: 600;
+  border-left-color: #8a6b32;
 }
 
 .sidebar-icon {
@@ -180,8 +175,8 @@
   gap: 8px;
   width: 100%;
   padding: 12px;
-  border-radius: 10px;
-  background: #2d1f1a;
+  border-radius: 8px;
+  background: #3d2e28;
   color: white;
   font-size: 0.85rem;
   font-weight: 600;
@@ -202,15 +197,13 @@
 }
 
 .stat-card {
-  background: #ffffff;
+  background: #f5f2eb;
   border-radius: 16px;
   padding: 24px;
-  border: 1px solid #eee8e3;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: transform 0.2s;
 }
 
 .stat-card:hover {
-  box-shadow: 0 8px 30px rgba(45, 31, 26, 0.06);
   transform: translateY(-2px);
 }
 
@@ -225,7 +218,6 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #f5f0eb;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -244,8 +236,8 @@
 }
 
 .trend-up {
-  background: #edf7ed;
-  color: #2e7d32;
+  background: #d1fae5;
+  color: #047857;
 }
 
 .trend-down {
@@ -276,10 +268,8 @@
 }
 
 .dashboard-section {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #eee8e3;
-  padding: 24px;
+  background: transparent;
+  padding: 0;
 }
 
 .section-header {
@@ -309,7 +299,7 @@
 
 /* ─── Promotion Banner ─────────────────────────────────────── */
 .promo-banner {
-  background: linear-gradient(135deg, #4e342e, #3e2723);
+  background: #3d2e28;
   border-radius: 16px;
   padding: 28px;
   color: white;
@@ -321,12 +311,13 @@
 .promo-banner::before {
   content: '';
   position: absolute;
-  top: -30%;
-  right: -10%;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(255,222,165,0.15) 0%, transparent 70%);
-  border-radius: 50%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235a4a44'%3E%3Cpath d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z'/%3E%3C/svg%3E") no-repeat center center;
+  background-size: 150px;
+  opacity: 0.2;
 }
 
 .promo-banner-label {
@@ -349,8 +340,7 @@
 .promo-banner-btn {
   display: inline-block;
   padding: 10px 24px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: #8a6b32;
   border-radius: 8px;
   color: white;
   font-size: 0.85rem;
@@ -361,7 +351,7 @@
 }
 
 .promo-banner-btn:hover {
-  background: rgba(255,255,255,0.25);
+  background: #775a19;
 }
 
 /* ─── Reservation List ─────────────────────────────────────── */
@@ -375,18 +365,14 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 4px;
-  border-bottom: 1px solid #f5f0eb;
+  padding: 16px 20px;
+  background: #f5f2eb;
+  border-radius: 12px;
   transition: background 0.15s;
 }
 
-.reservation-item:last-child {
-  border-bottom: none;
-}
-
 .reservation-item:hover {
-  background: #faf7f2;
-  border-radius: 10px;
+  background: #f0ede8;
 }
 
 .res-avatar {
@@ -429,13 +415,13 @@
 }
 
 .status-confirmed {
-  background: #edf7ed;
-  color: #2e7d32;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .status-waiting {
-  background: #fff8e1;
-  color: #f57f17;
+  background: #ffedd5;
+  color: #c2410c;
 }
 
 .status-cancelled {
@@ -466,12 +452,15 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .restaurant-image {
   width: 100%;
   height: 200px;
-  border-radius: 12px;
   object-fit: cover;
   background: #f0ede8;
 }
@@ -480,6 +469,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 0 24px;
 }
 
 .info-label {
@@ -513,15 +503,16 @@
 }
 
 .info-seats {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #6d4c41;
+  color: #8a6b32;
 }
 
 .edit-profile-btn {
-  width: 100%;
+  margin: 16px 24px 24px;
+  width: calc(100% - 48px);
   padding: 12px;
-  border: 1px solid #d4c3bf;
+  border: 1px solid #eee8e3;
   border-radius: 10px;
   background: transparent;
   color: #2d1f1a;

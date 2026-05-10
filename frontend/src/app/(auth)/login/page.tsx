@@ -1,29 +1,34 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import Link from 'next/link';
 import { login } from '@/actions/auth';
 import AuthInput from '@/components/AuthInput';
 import AuthButton from '@/components/AuthButton';
 import AuthHeader from '@/components/AuthHeader';
 import SocialLoginButtons from '@/components/SocialLoginButtons';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    if (state?.success && state.redirectUrl) {
+      window.location.href = state.redirectUrl;
+    }
+  }, [state]);
 
   return (
     <>
-      {/* Background Layer with Komorebi aesthetic */}
+      {/* Background Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-tr from-surface via-surface-container-low to-surface-container-high opacity-60"></div>
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px]"></div>
         <img
           alt="Atmospheric interior of a minimalist Japanese restaurant"
-          className="w-full h-full object-cover opacity-20 filter grayscale-[0.2] sepia-[0.1]"
+          className="w-full h-full object-cover opacity-60"
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP2zhXGxZWhLh8hL-L2oAulwrtlkd4iUZDdaMK2cO9ahcNQjff-LUKz9IkLwOV3rDDaz2Gg-Qx16vLmBEkDVZ8LQSyi3Igrir9xjB5S1TulmnsIbodav8ZH9v95wmTl558r6wJO9vKEhjd0sZ29GzLZsZa-Hf-2KEY2efG_va5Ndw45RKOTXqZrAjfKtLQXfo7OIAP-Jbctl6NGSDkURxkBMSIIlaMKLIxPoRIFNPis63jNFsmYEaCj3mqx4DD-1ANSs86bH2YIuw"
         />
-        {/* Animated Komorebi-like light spots */}
-        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[60%] bg-secondary-fixed-dim/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[50%] bg-primary-container/5 rounded-full blur-[100px]"></div>
       </div>
 
       {/* Top Navigation Bar */}
@@ -32,17 +37,17 @@ export default function LoginPage() {
       <main className="relative z-10 flex min-h-screen items-center justify-center px-4 py-20">
         <div className="w-full max-w-md">
           {/* Asymmetric Editorial Header */}
-          <div className="mb-12 pl-2 border-l-2 border-secondary">
-            <h1 className="text-4xl font-extrabold tracking-tight text-primary leading-tight">
-              おかえりなさい。
+          <div className="mb-8 pl-4 border-l-[3px] border-[#3d2e28]">
+            <h1 className="text-[2rem] font-extrabold tracking-tight text-[#3d2e28] leading-tight">
+              {t.auth_welcome_back}
             </h1>
-            <p className="mt-3 text-on-surface-variant font-medium text-sm tracking-wide">
-              禅の精神を込めた美食体験
+            <p className="mt-2 text-[#504442] font-medium text-sm tracking-wide">
+              {t.auth_login_subtitle}
             </p>
           </div>
 
           {/* Login Container */}
-          <div className="bg-surface-container-lowest/80 zen-blur p-8 md:p-10 rounded-[2rem] komorebi-shadow">
+          <div className="bg-white/95 backdrop-blur-md p-8 md:p-10 rounded-[2rem] shadow-sm">
             {/* General Error Message */}
             {state?.message && (
               <div className="mb-6 p-3 rounded-xl bg-error/10 border border-error/20">
@@ -58,7 +63,7 @@ export default function LoginPage() {
                 <AuthInput
                   id="email"
                   name="email"
-                  label="メールアドレスまたは電話番号"
+                  label={t.auth_email}
                   type="email"
                   placeholder="example@vietdine.com"
                   icon="mail"
@@ -67,20 +72,20 @@ export default function LoginPage() {
                 <AuthInput
                   id="password"
                   name="password"
-                  label="パスワード"
+                  label={t.auth_password}
                   type="password"
                   placeholder="••••••••"
                   icon="lock"
                   error={state?.errors?.password}
                   rightLabel={{
-                    text: 'パスワードをお忘れですか？',
+                    text: t.auth_forgot_password,
                     href: '/change-password',
                   }}
                 />
               </div>
 
               {/* Primary Action */}
-              <AuthButton text="ログイン" pending={pending} />
+              <AuthButton text={t.auth_login} pending={pending} />
             </form>
 
             <SocialLoginButtons />
@@ -88,9 +93,9 @@ export default function LoginPage() {
 
           {/* Footer Registration Link */}
           <p className="mt-8 text-center text-sm font-medium text-on-surface-variant">
-            アカウントをお持ちでないですか？
+            {t.auth_no_account}
             <Link className="text-primary font-bold hover:underline ml-1" href="/register">
-              今すぐ新規登録
+              {t.auth_register_now}
             </Link>
           </p>
         </div>

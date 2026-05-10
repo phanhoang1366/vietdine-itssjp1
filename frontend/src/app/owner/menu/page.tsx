@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 import MenuItemForm from '@/components/owner/MenuItemForm';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface MenuItem {
   id: number;
@@ -20,14 +21,15 @@ export default function MenuManagement() {
   const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchMenus();
   }, []);
 
-  const fetchMenus = async () => {
+  async function fetchMenus() {
     try {
-      const res = await fetch('http://localhost:3001/api/owner/menu', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -45,8 +47,8 @@ export default function MenuManagement() {
     setIsSubmitting(true);
     try {
       const url = editItem
-        ? `http://localhost:3001/api/owner/menu/${editItem.id}`
-        : 'http://localhost:3001/api/owner/menu';
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu/${editItem.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu`;
 
       const res = await fetch(url, {
         method: editItem ? 'PUT' : 'POST',
@@ -70,7 +72,7 @@ export default function MenuManagement() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/owner/menu/${deleteId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu/${deleteId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -93,7 +95,7 @@ export default function MenuManagement() {
       <OwnerSidebar />
       <main className="owner-main">
         <div className="owner-topbar">
-          <h1>メニュー管理</h1>
+          <h1>{t.owner_menu}</h1>
           <div className="topbar-actions">
             <button className="topbar-btn">
               <span className="material-symbols-outlined">language</span>
@@ -107,35 +109,35 @@ export default function MenuManagement() {
         <div className="owner-content">
           <div className="data-table-wrapper">
             <div className="table-toolbar">
-              <h2>メニュー一覧（{menus.length}品）</h2>
+              <h2>{t.owner_menu_list_title.replace('{count}', menus.length.toString())}</h2>
               <button
                 className="btn-primary"
                 onClick={() => { setEditItem(null); setShowForm(true); }}
               >
                 <span className="material-symbols-outlined">add</span>
-                新しいメニューを追加
+                {t.owner_menu_add_btn}
               </button>
             </div>
 
             {isLoading ? (
               <div className="owner-loading">
                 <div className="spinner" />
-                <span>読み込み中...</span>
+                <span>{t.common_loading}</span>
               </div>
             ) : menus.length === 0 ? (
               <div className="empty-state">
                 <span className="material-symbols-outlined">restaurant_menu</span>
-                <h3>メニューがまだありません</h3>
-                <p>「新しいメニューを追加」ボタンから最初のメニューを作成しましょう</p>
+                <h3>{t.owner_menu_empty}</h3>
+                <p>{t.owner_menu_empty_sub}</p>
               </div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>料理名</th>
-                    <th>原材料</th>
-                    <th>価格</th>
-                    <th style={{ width: '100px' }}>操作</th>
+                    <th>{t.owner_menu_col_name}</th>
+                    <th>{t.owner_menu_col_ingredients}</th>
+                    <th>{t.owner_menu_col_price}</th>
+                    <th style={{ width: '100px' }}>{t.owner_menu_col_actions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,14 +167,14 @@ export default function MenuManagement() {
                           <button
                             className="action-btn"
                             onClick={() => { setEditItem(item); setShowForm(true); }}
-                            title="編集"
+                            title={t.common_edit}
                           >
                             <span className="material-symbols-outlined">edit</span>
                           </button>
                           <button
                             className="action-btn delete"
                             onClick={() => setDeleteId(item.id)}
-                            title="削除"
+                            title={t.common_delete}
                           >
                             <span className="material-symbols-outlined">delete</span>
                           </button>
@@ -210,14 +212,14 @@ export default function MenuManagement() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="confirm-dialog">
               <span className="material-symbols-outlined">warning</span>
-              <h3>メニューを削除しますか？</h3>
-              <p>この操作は取り消せません。</p>
+              <h3>{t.owner_menu_delete_title}</h3>
+              <p>{t.owner_menu_delete_warning}</p>
               <div className="confirm-actions">
                 <button className="btn-cancel" onClick={() => setDeleteId(null)}>
-                  キャンセル
+                  {t.common_cancel}
                 </button>
                 <button className="btn-danger" onClick={handleDelete}>
-                  削除する
+                  {t.common_delete}
                 </button>
               </div>
             </div>

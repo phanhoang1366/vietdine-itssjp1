@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PromotionData {
   id?: number;
@@ -28,6 +29,7 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
     endDate: '',
     isActive: true,
   });
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (initialData) {
@@ -51,7 +53,7 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{initialData ? 'プロモーション編集' : '新しいプロモーションを作成'}</h2>
+          <h2>{initialData ? t.promo_form_edit_title : t.promo_form_add_title}</h2>
           <button onClick={onCancel} className="modal-close">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -59,29 +61,29 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
 
         <form onSubmit={handleSubmit} className="menu-form">
           <div className="form-group">
-            <label>タイトル<span className="required">*</span></label>
+            <label>{t.promo_form_title_label}<span className="required">*</span></label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="サンセットディナー特別プラン"
+              placeholder={t.promo_placeholder_title}
               required
             />
           </div>
 
           <div className="form-group">
-            <label>説明</label>
+            <label>{t.promo_form_desc_label}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="キャンペーンの詳細を入力..."
+              placeholder={t.promo_placeholder_desc}
               rows={3}
             />
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>割引率（%）<span className="required">*</span></label>
+              <label>{t.promo_form_discount_label}<span className="required">*</span></label>
               <input
                 type="number"
                 value={formData.discountPercent}
@@ -92,21 +94,21 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
               />
             </div>
             <div className="form-group">
-              <label>ステータス</label>
+              <label>{t.promo_form_status_label}</label>
               <select
                 value={formData.isActive ? 'active' : 'inactive'}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
                 className="form-select"
               >
-                <option value="active">有効</option>
-                <option value="inactive">無効</option>
+                <option value="active">{t.promo_form_status_active}</option>
+                <option value="inactive">{t.promo_form_status_inactive}</option>
               </select>
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label>開始日<span className="required">*</span></label>
+              <label>{t.promo_form_start_date}<span className="required">*</span></label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -115,7 +117,7 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
               />
             </div>
             <div className="form-group">
-              <label>終了日<span className="required">*</span></label>
+              <label>{t.promo_form_end_date}<span className="required">*</span></label>
               <input
                 type="date"
                 value={formData.endDate}
@@ -127,10 +129,10 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
 
           <div className="form-actions">
             <button type="button" onClick={onCancel} className="btn-cancel">
-              キャンセル
+              {t.common_cancel}
             </button>
             <button type="submit" disabled={isSubmitting} className="btn-submit">
-              {isSubmitting ? '保存中...' : (initialData ? '更新する' : '作成する')}
+              {isSubmitting ? t.menu_form_btn_saving : (initialData ? t.menu_form_btn_update : t.promo_form_btn_add)}
             </button>
           </div>
         </form>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 import PromotionForm from '@/components/owner/PromotionForm';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Promotion {
   id: number;
@@ -21,14 +22,15 @@ export default function PromotionsPage() {
   const [editItem, setEditItem] = useState<Promotion | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchPromotions();
   }, []);
 
-  const fetchPromotions = async () => {
+  async function fetchPromotions() {
     try {
-      const res = await fetch('http://localhost:3001/api/owner/promotions', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -46,8 +48,8 @@ export default function PromotionsPage() {
     setIsSubmitting(true);
     try {
       const url = editItem
-        ? `http://localhost:3001/api/owner/promotions/${editItem.id}`
-        : 'http://localhost:3001/api/owner/promotions';
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions/${editItem.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions`;
 
       const res = await fetch(url, {
         method: editItem ? 'PUT' : 'POST',
@@ -71,7 +73,7 @@ export default function PromotionsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/owner/promotions/${deleteId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions/${deleteId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -102,7 +104,7 @@ export default function PromotionsPage() {
       <OwnerSidebar />
       <main className="owner-main">
         <div className="owner-topbar">
-          <h1>プロモーション管理</h1>
+          <h1>{t.owner_promotions}</h1>
           <div className="topbar-actions">
             <button className="topbar-btn">
               <span className="material-symbols-outlined">language</span>
@@ -115,27 +117,27 @@ export default function PromotionsPage() {
 
         <div className="owner-content">
           <div className="table-toolbar" style={{ background: 'transparent', padding: '0 0 24px', border: 'none' }}>
-            <h2 style={{ fontSize: '1rem' }}>全{promotions.length}件のプロモーション</h2>
+            <h2 style={{ fontSize: '1rem' }}>{t.owner_promo_list_title.replace('{count}', promotions.length.toString())}</h2>
             <button
               className="btn-primary"
               onClick={() => { setEditItem(null); setShowForm(true); }}
             >
               <span className="material-symbols-outlined">add</span>
-              新しいプロモーション
+              {t.owner_promo_add_btn}
             </button>
           </div>
 
           {isLoading ? (
             <div className="owner-loading">
               <div className="spinner" />
-              <span>読み込み中...</span>
+              <span>{t.common_loading}</span>
             </div>
           ) : promotions.length === 0 ? (
             <div className="data-table-wrapper">
               <div className="empty-state">
                 <span className="material-symbols-outlined">campaign</span>
-                <h3>プロモーションがまだありません</h3>
-                <p>お客様を引き付けるキャンペーンを作成しましょう</p>
+                <h3>{t.owner_promo_empty}</h3>
+                <p>{t.owner_promo_empty_sub}</p>
               </div>
             </div>
           ) : (
@@ -159,7 +161,7 @@ export default function PromotionsPage() {
                       {formatDate(promo.startDate)} ～ {formatDate(promo.endDate)}
                     </span>
                     <span className={isActiveNow(promo) ? 'promo-status-active' : 'promo-status-inactive'}>
-                      {isActiveNow(promo) ? '実施中' : '終了'}
+                      {isActiveNow(promo) ? t.owner_promo_status_active : t.owner_promo_status_ended}
                     </span>
                   </div>
 
@@ -167,14 +169,14 @@ export default function PromotionsPage() {
                     <button
                       className="action-btn"
                       onClick={() => { setEditItem(promo); setShowForm(true); }}
-                      title="編集"
+                      title={t.common_edit}
                     >
                       <span className="material-symbols-outlined">edit</span>
                     </button>
                     <button
                       className="action-btn delete"
                       onClick={() => setDeleteId(promo.id)}
-                      title="削除"
+                      title={t.common_delete}
                     >
                       <span className="material-symbols-outlined">delete</span>
                     </button>
@@ -210,14 +212,14 @@ export default function PromotionsPage() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="confirm-dialog">
               <span className="material-symbols-outlined">warning</span>
-              <h3>プロモーションを削除しますか？</h3>
-              <p>この操作は取り消せません。</p>
+              <h3>{t.owner_promo_delete_title}</h3>
+              <p>{t.owner_menu_delete_warning}</p>
               <div className="confirm-actions">
                 <button className="btn-cancel" onClick={() => setDeleteId(null)}>
-                  キャンセル
+                  {t.common_cancel}
                 </button>
                 <button className="btn-danger" onClick={handleDelete}>
-                  削除する
+                  {t.common_delete}
                 </button>
               </div>
             </div>

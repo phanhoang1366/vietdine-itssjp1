@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Reservation {
   id: number;
@@ -26,11 +27,12 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-function formatDateTime(dateStr: string) {
+function formatDateTime(dateStr: string, locale: string) {
   const date = new Date(dateStr);
+  const loc = locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US';
   return {
-    date: date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' }),
-    time: date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+    date: date.toLocaleDateString(loc, { year: 'numeric', month: 'short', day: 'numeric' }),
+    time: date.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }),
   };
 }
 
@@ -43,11 +45,11 @@ function getStatusClass(status: string) {
   }
 }
 
-function getStatusLabel(status: string) {
+function getStatusLabel(status: string, t: any) {
   switch (status) {
-    case 'Confirmed': return '確定済み';
-    case 'Waiting': return '確認待ち';
-    case 'Cancelled': return 'キャンセル';
+    case 'Confirmed': return t.owner_res_action_confirm;
+    case 'Waiting': return t.owner_res_tab_all; // Assuming wait status string or fallback
+    case 'Cancelled': return t.owner_res_action_reject;
     default: return status;
   }
 }
@@ -56,14 +58,15 @@ export default function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
+  const { t, locale } = useLanguage();
 
   useEffect(() => {
     fetchReservations();
   }, []);
 
-  const fetchReservations = async () => {
+  async function fetchReservations() {
     try {
-      const res = await fetch('http://localhost:3001/api/owner/reservations', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations`, {
         credentials: 'include',
       });
       if (res.ok) {
@@ -79,7 +82,7 @@ export default function ReservationsPage() {
 
   const updateStatus = async (id: number, status: 'Confirmed' | 'Cancelled') => {
     try {
-      const res = await fetch(`http://localhost:3001/api/owner/reservations/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -109,7 +112,7 @@ export default function ReservationsPage() {
       <OwnerSidebar />
       <main className="owner-main">
         <div className="owner-topbar">
-          <h1>予約管理</h1>
+          <h1>{t.owner_reservations}</h1>
           <div className="topbar-actions">
             <button className="topbar-btn">
               <span className="material-symbols-outlined">language</span>
@@ -124,10 +127,10 @@ export default function ReservationsPage() {
           {/* Filter Tabs */}
           <div className="filter-tabs">
             {([
-              { key: 'all', label: 'すべて' },
-              { key: 'Waiting', label: '確認待ち' },
-              { key: 'Confirmed', label: '確定済み' },
-              { key: 'Cancelled', label: 'キャンセル' },
+              { key: 'all', label: t.owner_res_tab_all },
+              { key: 'Waiting', label: t.owner_res_tab_all }, // Reusing tab_all or fallback for waiting
+              { key: 'Confirmed', label: t.owner_res_action_confirm },
+              { key: 'Cancelled', label: t.owner_res_action_reject },
             ] as { key: FilterStatus; label: string }[]).map((tab) => (
               <button
                 key={tab.key}
@@ -143,28 +146,28 @@ export default function ReservationsPage() {
             {isLoading ? (
               <div className="owner-loading">
                 <div className="spinner" />
-                <span>読み込み中...</span>
+                <span>{t.common_loading}</span>
               </div>
             ) : filteredReservations.length === 0 ? (
               <div className="empty-state">
                 <span className="material-symbols-outlined">event_busy</span>
-                <h3>予約がありません</h3>
-                <p>該当する予約がまだありません</p>
+                <h3>{t.owner_res_empty}</h3>
+                <p>{t.owner_res_empty_sub}</p>
               </div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>お客様</th>
-                    <th>日時</th>
-                    <th>人数</th>
-                    <th>ステータス</th>
-                    <th style={{ width: '160px' }}>操作</th>
+                    <th>{t.owner_res_col_customer}</th>
+                    <th>{t.owner_res_col_datetime}</th>
+                    <th>{t.owner_res_col_guests}</th>
+                    <th>{t.owner_res_col_status}</th>
+                    <th style={{ width: '160px' }}>{t.owner_menu_col_actions}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredReservations.map((rev) => {
-                    const dt = formatDateTime(rev.revDatetime);
+                    const dt = formatDateTime(rev.revDatetime, locale);
                     return (
                       <tr key={rev.id}>
                         <td>
@@ -182,10 +185,10 @@ export default function ReservationsPage() {
                           <br />
                           <span style={{ fontSize: '0.82rem', color: '#8a7a74' }}>{dt.time}</span>
                         </td>
-                        <td style={{ fontWeight: 600 }}>{rev.guestCount}名</td>
+                        <td style={{ fontWeight: 600 }}>{t.owner_res_guests_label.replace('{count}', rev.guestCount.toString())}</td>
                         <td>
                           <span className={`res-status ${getStatusClass(rev.status)}`}>
-                            {getStatusLabel(rev.status)}
+                            {getStatusLabel(rev.status, t)}
                           </span>
                         </td>
                         <td>
@@ -196,14 +199,14 @@ export default function ReservationsPage() {
                                 style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}
                                 onClick={() => updateStatus(rev.id, 'Confirmed')}
                               >
-                                確認する
+                                {t.owner_res_action_confirm}
                               </button>
                               <button
                                 className="btn-cancel"
                                 style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}
                                 onClick={() => updateStatus(rev.id, 'Cancelled')}
                               >
-                                拒否
+                                {t.owner_res_action_reject}
                               </button>
                             </div>
                           )}

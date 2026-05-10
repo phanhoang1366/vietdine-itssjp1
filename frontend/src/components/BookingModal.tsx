@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface BookingModalProps {
   restaurantId: number;
@@ -25,6 +26,7 @@ export default function BookingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -33,12 +35,12 @@ export default function BookingModal({
     setError('');
 
     if (!isAuthenticated) {
-      setError('予約するにはログインが必要です');
+      setError(t.booking_modal_login_req);
       return;
     }
 
     if (!date || !time) {
-      setError('日付と時間を選択してください');
+      setError(t.booking_modal_date_req);
       return;
     }
 
@@ -46,14 +48,14 @@ export default function BookingModal({
     const dateObj = new Date(revDatetime);
 
     if (dateObj <= new Date()) {
-      setError('予約日時は未来の日時を指定してください');
+      setError(t.booking_modal_future_req);
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/bookings', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -67,13 +69,13 @@ export default function BookingModal({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || '予約に失敗しました');
+        setError(data.message || t.booking_modal_fail);
         return;
       }
 
       setSuccess(true);
     } catch {
-      setError('通信エラーが発生しました');
+      setError(t.booking_modal_network_err);
     } finally {
       setIsSubmitting(false);
     }
@@ -101,11 +103,11 @@ export default function BookingModal({
             <div className="success-icon">
               <span className="material-symbols-outlined">check_circle</span>
             </div>
-            <h2>予約を受け付けました</h2>
+            <h2>{t.booking_modal_success_title}</h2>
             <p>
-              {restaurantName} への予約リクエストが送信されました。
+              {restaurantName} {t.booking_modal_success_desc1}
               <br />
-              店舗からの確認をお待ちください。
+              {t.booking_modal_success_desc2}
             </p>
             <div className="success-details">
               <div className="success-detail-item">
@@ -118,15 +120,15 @@ export default function BookingModal({
               </div>
               <div className="success-detail-item">
                 <span className="material-symbols-outlined">group</span>
-                <span>{guestCount}名</span>
+                <span>{guestCount}{t.bookings_guests}</span>
               </div>
             </div>
             <div className="booking-form-actions">
               <a href="/bookings" className="booking-btn-primary">
-                予約一覧を確認
+                {t.booking_modal_view_list}
               </a>
               <button type="button" className="booking-btn-secondary" onClick={handleClose}>
-                閉じる
+                {t.booking_modal_close}
               </button>
             </div>
           </div>
@@ -134,7 +136,7 @@ export default function BookingModal({
           <>
             <div className="booking-modal-header">
               <div>
-                <h2>予約する</h2>
+                <h2>{t.booking_modal_title}</h2>
                 <p className="booking-restaurant-name">{restaurantName}</p>
               </div>
               <button className="booking-close-btn" onClick={handleClose}>
@@ -154,7 +156,7 @@ export default function BookingModal({
                 <div className="booking-form-group">
                   <label>
                     <span className="material-symbols-outlined">calendar_month</span>
-                    日付 <span className="required">*</span>
+                    {t.booking_modal_date} <span className="required">*</span>
                   </label>
                   <input
                     type="date"
@@ -167,7 +169,7 @@ export default function BookingModal({
                 <div className="booking-form-group">
                   <label>
                     <span className="material-symbols-outlined">schedule</span>
-                    時間 <span className="required">*</span>
+                    {t.booking_modal_time} <span className="required">*</span>
                   </label>
                   <input
                     type="time"
@@ -181,7 +183,7 @@ export default function BookingModal({
               <div className="booking-form-group">
                 <label>
                   <span className="material-symbols-outlined">group</span>
-                  人数 <span className="required">*</span>
+                  {t.booking_modal_guests} <span className="required">*</span>
                 </label>
                 <div className="guest-counter">
                   <button
@@ -192,7 +194,7 @@ export default function BookingModal({
                   >
                     <span className="material-symbols-outlined">remove</span>
                   </button>
-                  <span className="counter-value">{guestCount}名</span>
+                  <span className="counter-value">{guestCount}{t.bookings_guests}</span>
                   <button
                     type="button"
                     className="counter-btn"
@@ -203,7 +205,7 @@ export default function BookingModal({
                   </button>
                 </div>
                 {maxSeats && (
-                  <p className="capacity-hint">最大{maxSeats}席まで</p>
+                  <p className="capacity-hint">{t.booking_modal_max_seats.replace('{max}', maxSeats.toString())}</p>
                 )}
               </div>
 
@@ -216,17 +218,17 @@ export default function BookingModal({
                   {isSubmitting ? (
                     <>
                       <span className="mini-spinner" />
-                      送信中...
+                      {t.booking_modal_submitting}
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined">event_available</span>
-                      予約を確定する
+                      {t.booking_modal_submit}
                     </>
                   )}
                 </button>
                 <button type="button" className="booking-btn-secondary" onClick={handleClose}>
-                  キャンセル
+                  {t.common_cancel}
                 </button>
               </div>
             </form>

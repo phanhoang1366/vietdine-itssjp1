@@ -1,14 +1,17 @@
 'use client';
 
+import { useLanguage } from '@/context/LanguageContext';
+
 interface AuthButtonProps {
   text: string;
   pending?: boolean;
 }
 
 export default function AuthButton({ text, pending = false }: AuthButtonProps) {
+  const { t } = useLanguage();
   return (
     <button
-      className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold tracking-widest uppercase text-xs shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className="w-full bg-[#3d2e28] text-white py-4 rounded-xl font-bold tracking-widest uppercase text-xs hover:bg-[#2a1f1b] transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       type="submit"
       disabled={pending}
     >
@@ -34,7 +37,7 @@ export default function AuthButton({ text, pending = false }: AuthButtonProps) {
           />
         </svg>
       )}
-      {pending ? '処理中...' : text}
+      {pending ? t.auth_processing : text}
     </button>
   );
 }

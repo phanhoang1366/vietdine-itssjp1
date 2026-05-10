@@ -1,14 +1,22 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import Link from 'next/link';
 import { ownerLogin } from '@/actions/auth';
 import AuthInput from '@/components/AuthInput';
 import AuthButton from '@/components/AuthButton';
 import AuthHeader from '@/components/AuthHeader';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function OwnerLoginPage() {
   const [state, action, pending] = useActionState(ownerLogin, undefined);
+  const { t } = useLanguage();
+
+  useEffect(() => {
+    if (state?.success && state.redirectUrl) {
+      window.location.href = state.redirectUrl;
+    }
+  }, [state]);
 
   return (
     <>
@@ -23,10 +31,10 @@ export default function OwnerLoginPage() {
           <div className="mb-12 pl-2 border-l-2 border-secondary">
             <div className="flex items-center gap-2 mb-2">
               <span className="material-symbols-outlined text-secondary text-2xl">storefront</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">Owner Portal</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-secondary">{t.auth_owner_portal}</span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-primary leading-tight">店舗管理へようこそ。</h1>
-            <p className="mt-3 text-on-surface-variant font-medium text-sm tracking-wide">あなたのレストランを最適に管理しましょう</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-primary leading-tight">{t.auth_owner_login}</h1>
+            <p className="mt-3 text-on-surface-variant font-medium text-sm tracking-wide">{t.auth_owner_manage}</p>
           </div>
           <div className="bg-surface-container-lowest/80 zen-blur p-8 md:p-10 rounded-[2rem] komorebi-shadow">
             {state?.message && (
@@ -36,15 +44,15 @@ export default function OwnerLoginPage() {
             )}
             <form action={action} className="space-y-6">
               <div className="space-y-4">
-                <AuthInput id="email" name="email" label="オーナーメールアドレス" type="email" placeholder="owner@restaurant.com" icon="mail" error={state?.errors?.email} />
-                <AuthInput id="password" name="password" label="パスワード" type="password" placeholder="••••••••" icon="lock" error={state?.errors?.password} rightLabel={{ text: 'パスワードをお忘れですか？', href: '/change-password' }} />
+                <AuthInput id="email" name="email" label={t.auth_owner_email} type="email" placeholder="owner@restaurant.com" icon="mail" error={state?.errors?.email} />
+                <AuthInput id="password" name="password" label={t.auth_password} type="password" placeholder="••••••••" icon="lock" error={state?.errors?.password} rightLabel={{ text: t.auth_forgot_password, href: '/change-password' }} />
               </div>
-              <AuthButton text="ログイン" pending={pending} />
+              <AuthButton text={t.auth_login} pending={pending} />
             </form>
           </div>
           <p className="mt-8 text-center text-sm font-medium text-on-surface-variant">
-            オーナーアカウントをお持ちでないですか？
-            <Link className="text-primary font-bold hover:underline ml-1" href="/owner/register">新規登録</Link>
+            {t.auth_owner_no_account}
+            <Link className="text-primary font-bold hover:underline ml-1" href="/owner/register">{t.auth_register}</Link>
           </p>
         </div>
       </main>

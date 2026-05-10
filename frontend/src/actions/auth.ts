@@ -4,14 +4,16 @@ import { redirect } from 'next/navigation';
 import { FormState } from '@/lib/definitions';
 import { cookies } from 'next/headers';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
 async function forwardSessionCookie(res: Response) {
   const setCookieHeaders = res.headers.getSetCookie();
   const cookieStore = await cookies();
   
   for (const header of setCookieHeaders) {
-    if (header.startsWith('session=')) {
+    if (header.startsWith('session=;') || header.startsWith('session= ;')) {
+      cookieStore.delete('session');
+    } else if (header.startsWith('session=')) {
       const match = header.match(/session=([^;]+)/);
       if (match) {
         cookieStore.set('session', match[1], {
@@ -47,7 +49,7 @@ export async function login(state: FormState, formData: FormData): Promise<FormS
   if (!res.ok) return data.errors ? { errors: data.errors } : { message: data.message };
 
   await forwardSessionCookie(res);
-  redirect(data.user.roleId === 2 ? '/owner/dashboard' : '/');
+  return { success: true, redirectUrl: data.user.roleId === 2 ? '/owner' : '/' };
 }
 
 export async function ownerLogin(state: FormState, formData: FormData): Promise<FormState> {
@@ -63,7 +65,23 @@ export async function ownerLogin(state: FormState, formData: FormData): Promise<
   if (data.user.roleId !== 2) return { message: 'このアカウントはオーナーアカウントではありません' };
 
   await forwardSessionCookie(res);
-  redirect('/owner/dashboard');
+  return { success: true, redirectUrl: '/owner' };
+}
+
+export async function verifyGoogleToken(token: string) {
+  const res = await fetch(`${API_URL}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    return { success: false, message: data.message || 'Google Login Failed' };
+  }
+
+  await forwardSessionCookie(res);
+  return { success: true, user: data.user };
 }
 
 export async function signup(state: FormState, formData: FormData): Promise<FormState> {
@@ -77,7 +95,7 @@ export async function signup(state: FormState, formData: FormData): Promise<Form
   if (!res.ok) return data.errors ? { errors: data.errors } : { message: data.message };
 
   await forwardSessionCookie(res);
-  redirect('/');
+  return { success: true, redirectUrl: '/' };
 }
 
 export async function ownerSignup(state: FormState, formData: FormData): Promise<FormState> {
@@ -91,7 +109,7 @@ export async function ownerSignup(state: FormState, formData: FormData): Promise
   if (!res.ok) return data.errors ? { errors: data.errors } : { message: data.message };
 
   await forwardSessionCookie(res);
-  redirect('/owner/dashboard');
+  return { success: true, redirectUrl: '/owner' };
 }
 
 export async function changePassword(state: FormState, formData: FormData): Promise<FormState> {
@@ -136,5 +154,4 @@ export async function logout() {
     headers: await getAuthHeaders(),
   });
   await forwardSessionCookie(res);
-  redirect('/login');
 }

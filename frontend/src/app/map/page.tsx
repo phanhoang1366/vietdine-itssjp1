@@ -1,32 +1,39 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, User, Home, Map as MapIcon, Heart, Calendar, Settings, MapPin, Star } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
+
+const MapLoading = () => {
+  const { t } = useLanguage();
+  return <div className="w-full h-full flex items-center justify-center bg-[#252831] text-white/50">{t.map_loading}</div>;
+};
 
 // Dynamically import map to avoid SSR issues
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
   ssr: false,
-  loading: () => <div className="w-full h-full flex items-center justify-center bg-[#252831] text-white/50">地図を読み込み中...</div>
+  loading: () => <MapLoading />
 });
 
-export default function MapPage() {
+export function MapPageContent() {
   const searchParams = useSearchParams();
   const q = searchParams.get('q') || '';
   
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState(q);
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
+  const { t } = useLanguage();
   
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Fetch restaurants based on query
-    const fetchRestaurants = async () => {
+    async function fetchRestaurants() {
       try {
-        let url = 'http://localhost:3001/api/restaurants';
+        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/restaurants`;
         if (q) {
           url += `?q=${encodeURIComponent(q)}`;
         }
@@ -83,38 +90,38 @@ export default function MapPage() {
 
         {/* Greetings */}
         <div className="px-8 py-6 pt-2">
-          <h2 className="text-[20px] font-bold text-[#3d2e28] mb-1">こんにちは</h2>
-          <p className="text-[13px] text-[#827471]">お腹が空きましたか？</p>
+          <h2 className="text-[20px] font-bold text-[#3d2e28] mb-1">{t.map_hello}</h2>
+          <p className="text-[13px] text-[#827471]">{t.map_hungry}</p>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-4 flex flex-col gap-1.5 mt-2">
           <Link href="/" className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[#504442] hover:bg-[#f0ede8] transition-colors group">
             <Home className="w-5 h-5 text-[#827471] group-hover:text-[#3d2e28] transition-colors" strokeWidth={1.5} />
-            <span className="font-bold text-[14px]">ホーム</span>
+            <span className="font-bold text-[14px]">{t.nav_home}</span>
           </Link>
           <div className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-[#f0ede8] text-[#3d2e28] transition-colors cursor-pointer">
             <MapIcon className="w-5 h-5 text-[#3d2e28]" strokeWidth={2} />
-            <span className="font-bold text-[14px]">検索</span>
+            <span className="font-bold text-[14px]">{t.nav_search}</span>
           </div>
           <Link href="/saved" className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[#504442] hover:bg-[#f0ede8] transition-colors group">
             <Heart className="w-5 h-5 text-[#827471] group-hover:text-[#3d2e28] transition-colors" strokeWidth={1.5} />
-            <span className="font-bold text-[14px]">お気に入り</span>
+            <span className="font-bold text-[14px]">{t.nav_favorites}</span>
           </Link>
-          <Link href="/reservations" className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[#504442] hover:bg-[#f0ede8] transition-colors group">
+          <Link href="/bookings" className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[#504442] hover:bg-[#f0ede8] transition-colors group">
             <Calendar className="w-5 h-5 text-[#827471] group-hover:text-[#3d2e28] transition-colors" strokeWidth={1.5} />
-            <span className="font-bold text-[14px]">予約</span>
+            <span className="font-bold text-[14px]">{t.nav_reservations}</span>
           </Link>
           <Link href="/profile" className="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-[#504442] hover:bg-[#f0ede8] transition-colors group">
             <Settings className="w-5 h-5 text-[#827471] group-hover:text-[#3d2e28] transition-colors" strokeWidth={1.5} />
-            <span className="font-bold text-[14px]">設定</span>
+            <span className="font-bold text-[14px]">{t.nav_settings}</span>
           </Link>
         </nav>
 
         {/* Bottom CTA */}
         <div className="p-6">
           <button className="w-full py-[18px] bg-[#361f1a] text-white rounded-xl font-bold text-[13px] hover:bg-[#4e342e] transition-colors shadow-[0_8px_16px_rgba(54,31,26,0.15)]">
-            テーブルを予約する
+            {t.map_reserve_btn}
           </button>
         </div>
       </aside>
@@ -126,9 +133,9 @@ export default function MapPage() {
         <header className="absolute top-0 left-0 w-full h-[90px] flex items-center justify-between px-8 z-10 pointer-events-none">
           {/* Top Links */}
           <div className="flex items-center gap-8 pointer-events-auto">
-            <div className="font-bold text-[15px] text-[#3d2e28] border-b-[3px] border-[#3d2e28] pb-1 cursor-pointer">マップ</div>
-            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">レストラン</div>
-            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">特集</div>
+            <div className="font-bold text-[15px] text-[#3d2e28] border-b-[3px] border-[#3d2e28] pb-1 cursor-pointer">{t.map_map_tab}</div>
+            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">{t.map_restaurants_tab}</div>
+            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">{t.map_featured_tab}</div>
           </div>
 
           {/* Search & Actions */}
@@ -137,7 +144,7 @@ export default function MapPage() {
               <Search className="w-4 h-4 text-[#827471] mr-3" />
               <input
                 type="text"
-                placeholder="ハノイの和食レストランを検索."
+                placeholder={t.map_search_placeholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent border-none outline-none text-[13px] text-[#3d2e28] placeholder:text-[#a09491] py-1.5"
@@ -196,11 +203,11 @@ export default function MapPage() {
                     <div className="absolute top-4 right-4">
                       {isAvailable ? (
                         <div className="px-3 py-1 bg-[#1c3821]/90 backdrop-blur-md text-white text-[11px] font-bold rounded-lg shadow-sm">
-                          空席あり
+                          {t.map_available}
                         </div>
                       ) : (
                         <div className="px-3 py-1 bg-[#8a2a2a]/90 backdrop-blur-md text-white text-[11px] font-bold rounded-lg shadow-sm">
-                          本日満席
+                          {t.map_full}
                         </div>
                       )}
                     </div>
@@ -228,12 +235,12 @@ export default function MapPage() {
                       {isAvailable ? (
                         <Link href={`/restaurant/${resId}`}>
                           <button className="px-5 py-2.5 bg-[#361f1a] text-white text-[12px] font-bold rounded-full hover:bg-[#4e342e] transition-colors shadow-sm">
-                            詳細を見る
+                            {t.restaurant_details}
                           </button>
                         </Link>
                       ) : (
                         <button className="px-5 py-2.5 bg-[#e5e2dd] text-[#827471] text-[12px] font-bold rounded-full cursor-not-allowed">
-                          キャンセル待ち
+                          {t.map_waitlist}
                         </button>
                       )}
                     </div>
@@ -279,5 +286,13 @@ export default function MapPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#faf8f6] flex items-center justify-center">Loading...</div>}>
+      <MapPageContent />
+    </Suspense>
   );
 }
