@@ -25,6 +25,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running' });
 });
 
+app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
