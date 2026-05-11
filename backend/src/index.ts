@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import prisma from './db/prisma';
+import "dotenv/config";
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';

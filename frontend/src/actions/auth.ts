@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 import { FormState } from '@/lib/definitions';
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3001/api';
-const MOCK_API = process.env.MOCK_API === 'true';
+const API_URL = process.env.API_URL ?? "http://localhost:3001/api";
+const MOCK_LOGIN = process.env.MOCK_LOGIN === "true";
 
 async function apiFetch(url: string, init: RequestInit = {}) {
   if (MOCK_API) {
@@ -199,18 +199,48 @@ async function getAuthHeaders() {
   };
 }
 
-export async function login(state: FormState, formData: FormData): Promise<FormState> {
-  const { res, data } = await apiFetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+
+export async function login(state: any, formData: FormData) {
+  if (MOCK_LOGIN) {
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    if (!email || !password) {
+      return {
+        message: "メールアドレスとパスワードを入力してください",
+      };
+    }
+
+    const cookieStore = await cookies();
+
+    cookieStore.set("session", "mock-login-session", {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24,
+    });
+
+    redirect("/restaurant/1");
+  }
+
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(Object.fromEntries(formData)),
   });
 
-  if (!res) return { message: data.message };
-  if (!res.ok) return data.errors ? { errors: data.errors } : { message: data.message };
+  const data = await res.json().catch(() => ({}));
 
-  await forwardSessionCookie(res);
-  redirect(data.user.roleId === 2 ? '/owner/dashboard' : '/restaurant/1');
+  if (!res.ok) {
+    return {
+      message: data.message ?? "Login failed",
+      errors: data.errors,
+    };
+  }
+
+  redirect("/restaurant/1");
 }
 
 export async function ownerLogin(state: FormState, formData: FormData): Promise<FormState> {

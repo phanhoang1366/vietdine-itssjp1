@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.API_URL ?? "http://localhost:3001/api";
+
+
 
 async function getAuthHeaders() {
   const cookieStore = await cookies();
@@ -33,66 +35,43 @@ export async function checkSavedStatus(restaurantId: number) {
 */
 
 export async function getRestaurantById(id: number) {
-  return {
-    id,
-    name: "Sakura Japanese Restaurant",
-    description:
-      "ハノイの中心部で本格的な和食を楽しめるレストランです。落ち着いた空間で、寿司、刺身、天ぷらなどを提供しています。",
-    imageUrl:
-      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-    address: "123 Kim Ma, Ba Dinh, Hanoi",
-    mapImageUrl: "",
-    openingHours: "10:00 - 22:00",
-    budgetRange: "300K - 800K VND",
-    menus: [
-      {
-        id: 1,
-        dishNameJp: "寿司セット",
-        dishNameVn: "Set sushi",
-        imageUrl:
-          "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        price: 350000,
-        description: "新鮮な魚を使った人気の寿司セットです。",
-        tags: ["人気", "寿司"],
-      },
-      {
-        id: 2,
-        dishNameJp: "天ぷら",
-        dishNameVn: "Tempura",
-        imageUrl:
-          "https://images.unsplash.com/photo-1615361200141-f45040f367be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        price: 220000,
-        description: "サクサクの衣で揚げた海老と野菜の天ぷらです。",
-        tags: ["揚げ物"],
-      },
-    ],
-    reviews: [
-      {
-        id: 1,
-        rating: 5,
-        comment: "料理が美味しく、雰囲気もとても良かったです。",
-        createdAt: new Date().toISOString(),
-        user: {
-          fullName: "Nguyen Van A",
-          avatarUrl: "",
-        },
-      },
-      {
-        id: 2,
-        rating: 4,
-        comment: "サービスが丁寧で、また来たいと思いました。",
-        createdAt: new Date().toISOString(),
-        user: {
-          fullName: "Tran Thi B",
-          avatarUrl: "",
-        },
-      },
-    ],
-  };
+  try {
+    const res = await fetch(`${API_URL}/restaurants/${id}`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      console.error("Get restaurant failed:", res.status);
+      return null;
+    }
+
+    const json = await res.json();
+
+    // Backend của bạn trả về { data: restaurant }
+    return json.data ?? json;
+  } catch (error) {
+    console.error("Error fetching restaurant:", error);
+    return null;
+  }
 }
 
 export async function checkSavedStatus(restaurantId: number) {
-  return false;
+  try {
+    const res = await fetch(`${API_URL}/restaurants/${restaurantId}/saved-status`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return false;
+    }
+
+    const json = await res.json();
+
+    return json.data?.isSaved ?? json.isSaved ?? false;
+  } catch (error) {
+    console.error("Error checking saved status:", error);
+    return false;
+  }
 }
 
 export async function toggleSavedRestaurant(restaurantId: number) {

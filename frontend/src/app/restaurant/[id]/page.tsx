@@ -22,15 +22,15 @@ export default async function RestaurantDetailsPage({
   const restaurant = await getRestaurantById(restaurantId);
   if (!restaurant) notFound();
 
+  const reviews = restaurant.reviews ?? [];
+  const menus = restaurant.menus ?? [];
   const isSaved = await checkSavedStatus(restaurantId);
 
   const avgRating =
-    restaurant.reviews.length > 0
+    reviews.length > 0
       ? (
-          restaurant.reviews.reduce(
-            (acc: number, rev: any) => acc + rev.rating,
-            0,
-          ) / restaurant.reviews.length
+          reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) /
+          reviews.length
         ).toFixed(1)
       : "N/A";
 
@@ -46,7 +46,7 @@ export default async function RestaurantDetailsPage({
             "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
           }
           rating={avgRating}
-          reviewCount={restaurant.reviews.length}
+          reviewCount={reviews.length}
           restaurantId={restaurantId}
           initialSaved={isSaved}
         />
@@ -65,23 +65,23 @@ export default async function RestaurantDetailsPage({
               }}
             />
 
-            {restaurant.menus && restaurant.menus.length > 0 && (
+            {menus.length > 0 && (
               <MenuSection
-                items={restaurant.menus.map((menu: any) => ({
+                items={menus.map((menu: any) => ({
                   id: menu.id,
                   dishNameJp: menu.dishNameJp,
                   dishNameVn: menu.dishNameVn,
                   imageUrl: menu.imageUrl,
-                  price: menu.price,
-                  description: menu.description,
+                  price: menu.price ?? 0,
+                  description: menu.description ?? menu.ingredients ?? "",
                   tags: menu.tags || [],
                 }))}
               />
             )}
 
-            {restaurant.reviews && restaurant.reviews.length > 0 && (
+            {reviews && reviews.length > 0 && (
               <ReviewsSection
-                reviews={restaurant.reviews.map((review: any) => ({
+                reviews={reviews.map((review: any) => ({
                   id: review.id,
                   user: {
                     fullName: review.user?.fullName || "Anonymous",
@@ -91,7 +91,7 @@ export default async function RestaurantDetailsPage({
                   comment: review.comment,
                   createdAt: review.createdAt,
                 }))}
-                totalReviews={restaurant.reviews.length}
+                totalReviews={reviews.length}
               />
             )}
           </div>
