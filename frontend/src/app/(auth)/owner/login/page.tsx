@@ -44,7 +44,7 @@ export default function OwnerLoginPage() {
             )}
             <form action={action} className="space-y-6">
               <div className="space-y-4">
-                <AuthInput id="email" name="email" label={t.auth_owner_email} type="email" placeholder="owner@restaurant.com" icon="mail" error={state?.errors?.email} />
+                <AuthInput id="email" name="email" label={t.auth_owner_email} type="email" placeholder="" icon="mail" error={state?.errors?.email} />
                 <AuthInput id="password" name="password" label={t.auth_password} type="password" placeholder="••••••••" icon="lock" error={state?.errors?.password} rightLabel={{ text: t.auth_forgot_password, href: '/change-password' }} />
               </div>
               <AuthButton text={t.auth_login} pending={pending} />
@@ -52,7 +52,7 @@ export default function OwnerLoginPage() {
           </div>
           <p className="mt-8 text-center text-sm font-medium text-on-surface-variant">
             {t.auth_owner_no_account}
-            <Link className="text-primary font-bold hover:underline ml-1" href="/owner/register">{t.auth_register}</Link>
+            <Link className="text-primary font-bold hover:underline ml-1" href="/register">{t.auth_register}</Link>
           </p>
         </div>
       </main>

@@ -67,7 +67,7 @@ export default function OwnerRegisterPage() {
               <AuthInput id="name" name="name" label={t.auth_owner_name} placeholder={t.auth_owner_name_placeholder} error={state?.errors?.name} />
               <AuthInput id="restaurantName" name="restaurantName" label={t.auth_restaurant_name} placeholder={t.auth_res_placeholder} error={state?.errors?.restaurantName} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <AuthInput id="email" name="email" label={t.auth_email_label} type="email" placeholder="owner@restaurant.com" error={state?.errors?.email} />
+                <AuthInput id="email" name="email" label={t.auth_email_label} type="email" placeholder="" error={state?.errors?.email} />
                 <AuthInput id="phone" name="phone" label={t.auth_phone} placeholder={t.auth_phone_placeholder} error={state?.errors?.phone} />
               </div>
               <AuthInput id="password" name="password" label={t.auth_password} type="password" placeholder="••••••••" error={state?.errors?.password} />
