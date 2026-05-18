@@ -1,0 +1,209 @@
+# VietDine — Kế hoạch sửa chữa & cải thiện
+
+## Tóm tắt vấn đề
+
+Sau khi kiểm tra toàn bộ 11 màn hình và codebase, tôi phát hiện **12 lỗi chức năng** và **8 điểm cần cải thiện UI**. Dưới đây là kế hoạch sửa theo thứ tự ưu tiên.
+
+---
+
+## 🔴 Phase 1: Sửa lỗi chức năng (BUG FIXES)
+
+### Bug 1: Booking Modal không hiển thị CSS trên trang Restaurant Detail
+
+> [!CAUTION]
+> **Nguyên nhân gốc:** `BookingModal` dùng CSS class names (`.booking-modal-overlay`, `.booking-form`, v.v.) được định nghĩa trong `bookings/bookings.css`, nhưng file CSS này **chỉ được import trong `bookings/page.tsx`**, KHÔNG được import trong `RestaurantClient.tsx`. Khi mở modal trên trang chi tiết nhà hàng → modal render ra HTML nhưng **không có styling** → hiển thị dạng text thô như trong screenshot.
+
+**Sửa:**
+- **[MODIFY]** [RestaurantClient.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/restaurant/[id]/RestaurantClient.tsx)
+  - Thêm `import '@/app/bookings/bookings.css';` ở đầu file
+  - Hoặc tốt hơn: tách CSS của BookingModal ra thành file riêng `BookingModal.css` trong `components/` và import trực tiếp trong `BookingModal.tsx` → mọi nơi dùng modal đều có CSS
+
+---
+
+### Bug 2: Nút "Liên hệ" không có chức năng
+
+**Nguyên nhân:** Button `{t.rest_contact}` (dòng 51-53 trong `RestaurantClient.tsx`) không có `onClick` handler.
+
+**Sửa:**
+- **[MODIFY]** [RestaurantClient.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/restaurant/[id]/RestaurantClient.tsx)
+  - Nút "Liên hệ" → chuyển hướng đến trang bookings/chat với nhà hàng đó
+  - Logic: Tạo booking (trạng thái Waiting) rồi redirect đến `/bookings/{id}` (trang chat)
+  - Hoặc đơn giản hơn: redirect đến trang booking list với query param chỉ ra nhà hàng
+
+---
+
+### Bug 3: Không thể lưu nhà hàng (Save)
+
+> [!IMPORTANT]
+> **Nguyên nhân:** Trang `saved/page.tsx` gọi API `/api/saved` qua `fetch()` với `credentials: 'include'`, nhưng vì Next.js proxy qua `rewrites` (localhost:3000 → localhost:3001), **cookie session có thể không được forward đúng** khi gọi từ client-side. Trang `RestaurantClient.tsx` **không có nút Save** — `SaveRestaurantButton` component tồn tại nhưng không được render.
+
+**Sửa:**
+- **[MODIFY]** [RestaurantClient.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/restaurant/[id]/RestaurantClient.tsx)
+  - Thêm `SaveRestaurantButton` vào hero section (góc trên phải ảnh)
+  - Truyền `restaurantId` và `isSaved` (đã có sẵn trong props)
+- **[MODIFY]** [saved/page.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/saved/page.tsx)
+  - Chuyển từ client-side fetch sang dùng server action `getSavedRestaurants()` đã có sẵn, hoặc sửa URL fetch dùng proxy path `/api/saved` thay vì `http://localhost:3001/api/saved`
+
+---
+
+### Bug 4: Rating/Đánh giá là mock data
+
+**Nguyên nhân:** Rating "4.9" trên trang chủ và "42 đánh giá" trên trang chi tiết là **hardcoded**, không lấy từ database.
+
+**Sửa:**
+- **[MODIFY]** [page.tsx (home)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/page.tsx)
+  - Tính `avgRating` từ `restaurant.reviews[]` thay vì hardcode "4.9"
+  - Hiển thị `restaurant.reviews.length` thay vì số cố định
+- **[MODIFY]** [RestaurantClient.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/restaurant/[id]/RestaurantClient.tsx)
+  - Dòng 121: Thay `'42'` bằng `restaurant.reviews.length.toString()`
+  - Section Reviews: hiển thị danh sách reviews thực từ `restaurant.reviews[]` thay vì mock "Takeshi Sato"
+- **[MODIFY]** [restaurant.service.ts](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/backend/src/services/restaurant.service.ts)
+  - Đảm bảo `searchRestaurants()` include reviews để tính avg rating
+- **[MODIFY]** [page.tsx (map)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/map/page.tsx)
+  - Dòng 186: Thay mock rating "4.8"/"4.9" bằng rating thực
+
+---
+
+### Bug 5: Khoảng cách (Distance) là giả
+
+**Nguyên nhân:** Trang chủ dòng 134 `{restaurant.id * 0.5} km` — tính distance bằng nhân ID với 0.5, không liên quan gì đến vị trí.
+
+**Sửa:**
+- **[MODIFY]** [page.tsx (home)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/page.tsx)
+  - Sử dụng Geolocation API lấy vị trí user hiện tại
+  - Tính khoảng cách thực từ user đến `restaurant.latitude/longitude` bằng Haversine formula
+  - Nếu user không cho phép location → hiển thị "—"
+- **[MODIFY]** [saved/page.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/saved/page.tsx)
+  - Tương tự: thay "1.2 km" hardcoded bằng khoảng cách thực
+- **[NEW]** `frontend/src/lib/geo.ts` — Utility function tính khoảng cách Haversine
+
+---
+
+### Bug 6: Tình trạng chỗ (Availability) là giả
+
+**Nguyên nhân:** Map page dòng 184: `const isAvailable = index % 2 === 0;` — dùng chẵn/lẻ để mock. Saved page dòng 96: `restaurant.id % 2 === 0`.
+
+**Sửa:**
+- **[MODIFY]** [page.tsx (map)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/map/page.tsx)
+  - Tính availability dựa trên `restaurant.maxSeats` và số lượng reservations đang active (Waiting + Confirmed)
+- **[MODIFY]** [restaurant.service.ts](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/backend/src/services/restaurant.service.ts)
+  - Thêm `_count: { reservations }` hoặc trả về số booking active trong response
+- **[MODIFY]** [saved/page.tsx](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/saved/page.tsx)
+  - Tương tự logic availability
+
+---
+
+### Bug 7: Filter buttons trên Home & Map không hoạt động
+
+**Nguyên nhân:** Các nút Price, Rating, Category, filter bar trên map — đều chỉ là UI, không có onClick/state.
+
+**Sửa:**
+- **[MODIFY]** [page.tsx (home)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/page.tsx)
+  - Thêm state cho filters: `isClean`, `hasJpMenu`, `hasAirCon`, `hasJpStaff`, `category`
+  - Dropdown/checkbox filter UI
+  - Gọi lại `getRestaurants()` với filter params
+- **[MODIFY]** [page.tsx (map)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/map/page.tsx)
+  - Tương tự: thêm filter panel có thể toggle
+  - Gọi API với query params `?isClean=true&hasJpMenu=true` v.v.
+  - Backend đã hỗ trợ — chỉ cần kết nối frontend
+
+---
+
+### Bug 8: Lịch sử tìm kiếm không tự động lưu
+
+**Nguyên nhân:** Map page search KHÔNG gọi API `/api/search-history` để lưu keyword.
+
+**Sửa:**
+- **[MODIFY]** [page.tsx (map)](file:///e:/Project%20JP%20ITSS/vietdine-itssjp1/frontend/src/app/map/page.tsx)
+  - Sau khi search thành công → gọi `POST /api/search-history` với keyword
+  - Chỉ lưu khi user đã đăng nhập
+
+---
+
+### Bug 9: Price range hiển thị giả
+
+**Nguyên nhân:** Homepage dòng 138 `$$$` hardcoded. Map page dòng 232 `鮨 • ¥¥` hardcoded.
+
+**Sửa:**
+- Tính price range từ `restaurant.menus[].price` (min-max)
+- Hiển thị dạng "50k - 200k" hoặc ký hiệu "₫₫" dựa trên giá trung bình
+
+---
+
+## 🟡 Phase 2: Cải thiện UI/UX
+
+### UI 1: Restaurant Detail — Thêm tab navigation & Reviews thực
+- Tabs: Thông tin | Thực đơn | Đánh giá
+- Hiển thị tất cả reviews thực từ DB
+- Rating distribution chart (5★ bar graph)
+- Form viết review cho user đã đăng nhập
+
+### UI 2: Mini Map thực trên sidebar Restaurant Detail
+- Hiện tại sidebar map chỉ là placeholder icon
+- Thêm Leaflet mini map với marker vị trí nhà hàng
+
+### UI 3: Loading Skeletons
+- Trang chủ: skeleton cards khi đang fetch
+- Map: skeleton cards trong carousel
+- Saved: skeleton grid
+
+### UI 4: Home page — Animation stagger cho cards
+- Cards xuất hiện lần lượt với animation delay
+- Smooth hover transitions
+
+### UI 5: Footer component
+- **[NEW]** `frontend/src/components/Footer.tsx`
+- Links: About, Contact, Terms, Privacy
+- Language switcher
+- Social links
+
+### UI 6: Empty states đẹp hơn
+- Trang saved trống: thêm illustration
+- Booking trống: thêm CTA rõ ràng hơn
+
+### UI 7: Responsive mobile
+- Map page sidebar → hamburger menu trên mobile
+- Restaurant cards → full width trên mobile
+- Filter bar → horizontal scroll
+
+### UI 8: Owner Dashboard Charts
+- Biểu đồ đặt bàn theo tuần (dùng CSS hoặc lightweight chart lib)
+
+---
+
+## 📋 Thứ tự thực hiện đề xuất
+
+| # | Task | Độ khó | Ảnh hưởng |
+|---|------|--------|-----------|
+| 1 | Bug 1: Import CSS cho BookingModal | ⭐ Dễ | 🔴 Cao — Modal đặt bàn hoàn toàn không dùng được |
+| 2 | Bug 2: Nút Liên hệ | ⭐ Dễ | 🔴 Cao — Nút chết |
+| 3 | Bug 3: Save restaurant | ⭐⭐ Trung bình | 🔴 Cao — Tính năng cốt lõi |
+| 4 | Bug 4: Rating thực | ⭐⭐ Trung bình | 🟡 Trung bình — Hiển thị sai |
+| 5 | Bug 9: Price range | ⭐ Dễ | 🟡 Trung bình |
+| 6 | Bug 5: Khoảng cách | ⭐⭐ Trung bình | 🟡 Trung bình |
+| 7 | Bug 6: Availability | ⭐⭐⭐ Khó | 🟡 Trung bình |
+| 8 | Bug 7: Filters | ⭐⭐⭐ Khó | 🟡 Trung bình — UX quan trọng |
+| 9 | Bug 8: Search history | ⭐ Dễ | 🟢 Thấp |
+| 10 | UI 1-8: Polish | ⭐⭐⭐ Khó | 🟡 Trung bình |
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Bạn muốn tôi bắt đầu sửa luôn từ Bug 1-3 (booking modal + save + contact)?** Đây là 3 lỗi nghiêm trọng nhất, ảnh hưởng trực tiếp đến trải nghiệm.
+> 2. **Nút "Liên hệ"** nên hoạt động thế nào? A) Mở chat trực tiếp với chủ quán, hay B) Redirect đến trang booking + chat?
+> 3. **Filters**: Bạn muốn dạng dropdown hay dạng panel mở ra bên cạnh?
+> 4. **Review system**: Cần form viết review ngay trên trang chi tiết hay chưa?
+
+## Verification Plan
+
+### Automated
+- `npm run build` frontend — check TypeScript errors
+- Test từng API endpoint: `/api/saved`, `/api/bookings`, `/api/restaurants`
+
+### Manual Browser Testing
+- Test luồng: Xem nhà hàng → Bấm Đặt bàn → Modal hiện đúng → Submit
+- Test luồng: Xem nhà hàng → Bấm Save → Vào trang Đã lưu → Thấy nhà hàng
+- Test luồng: Search → Vào lịch sử → Thấy keyword đã search
+- Kiểm tra rating, distance, availability hiển thị đúng

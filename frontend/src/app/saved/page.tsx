@@ -2,19 +2,27 @@
 
 import NavHeader from '@/components/NavHeader';
 import { useLanguage } from '@/context/LanguageContext';
-import { MapPin, Star, BookOpen, Heart } from 'lucide-react';
+import { MapPin, Star, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { calculateDistanceKm, formatDistance, type Coordinates } from '@/lib/geo';
+import {
+  getAverageRating,
+  getPriceRange,
+  isRestaurantAvailable,
+  type RestaurantLike,
+} from '@/lib/restaurant-utils';
 
 export default function SavedPage() {
   const { t } = useLanguage();
-  const [savedRestaurants, setSavedRestaurants] = useState<any[]>([]);
+  const [savedRestaurants, setSavedRestaurants] = useState<RestaurantLike[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 
   useEffect(() => {
     async function fetchSaved() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/saved`, {
+        const res = await fetch('/api/saved', {
           credentials: 'include',
         });
         if (res.ok) {
@@ -28,6 +36,21 @@ export default function SavedPage() {
       }
     }
     fetchSaved();
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => setUserLocation(null),
+      { enableHighAccuracy: false, timeout: 7000 }
+    );
   }, []);
 
   if (isLoading) {
@@ -71,10 +94,11 @@ export default function SavedPage() {
 
         {savedRestaurants && savedRestaurants.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedRestaurants.map((restaurant: any) => {
-              const avgRating = restaurant.reviews && restaurant.reviews.length > 0 
-                ? (restaurant.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / restaurant.reviews.length).toFixed(1)
-                : 'N/A';
+            {savedRestaurants.map((restaurant) => {
+              const avgRating = getAverageRating(restaurant);
+              const distance = formatDistance(calculateDistanceKm(userLocation, restaurant));
+              const priceRange = getPriceRange(restaurant);
+              const isAvailable = isRestaurantAvailable(restaurant);
 
               return (
                 <Link href={`/restaurant/${restaurant.id}`} key={restaurant.id}>
@@ -82,7 +106,7 @@ export default function SavedPage() {
                     {/* Image Area */}
                     <div className="relative h-[220px] bg-[#e5e2dd] overflow-hidden rounded-[20px]">
                       <img 
-                        src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                        src={restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"} 
                         alt={restaurant.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -93,7 +117,7 @@ export default function SavedPage() {
                       
                       {/* Availability Badge */}
                       <div className="absolute bottom-4 left-4 z-10">
-                        {restaurant.id % 2 === 0 ? (
+                        {isAvailable ? (
                           <div className="px-3 py-1 bg-[#1c3821]/90 backdrop-blur-md text-white text-[11px] font-bold rounded-lg shadow-sm">
                             {t.saved_available}
                           </div>
@@ -121,11 +145,11 @@ export default function SavedPage() {
                       <div className="mt-auto flex items-center gap-4 text-[12px] text-[#827471]">
                         <div className="flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5" />
-                          <span>1.2 km</span>
+                          <span>{distance}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-[14px]">payments</span>
-                          <span>$$$</span>
+                          <span>{priceRange}</span>
                         </div>
                       </div>
                     </div>

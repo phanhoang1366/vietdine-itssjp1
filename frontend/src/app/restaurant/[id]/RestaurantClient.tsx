@@ -2,23 +2,77 @@
 
 import { useLanguage } from '@/context/LanguageContext';
 import NavHeader from '@/components/NavHeader';
-import { MapPin, Star } from 'lucide-react';
-import Link from 'next/link';
+import { Star } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import BookingModal from '@/components/BookingModal';
+import SaveRestaurantButton from '@/components/SaveRestaurantButton';
+import {
+  getAverageRating,
+  getPriceRange,
+  getReviewCount,
+  type MenuLike,
+  type RestaurantLike,
+  type ReviewLike,
+} from '@/lib/restaurant-utils';
+import '@/app/bookings/bookings.css';
 
 interface RestaurantClientProps {
-  restaurant: any;
+  restaurant: RestaurantLike;
   isSaved: boolean;
+}
+
+interface ReservationSummary {
+  id: number;
+  restaurantId: number;
+  status: string;
 }
 
 export default function RestaurantClient({ restaurant, isSaved }: RestaurantClientProps) {
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isContacting, setIsContacting] = useState(false);
 
-  const avgRating = restaurant.reviews.length > 0 
-    ? (restaurant.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / restaurant.reviews.length).toFixed(1)
-    : 'N/A';
+  const avgRating = getAverageRating(restaurant);
+  const reviewCount = getReviewCount(restaurant);
+  const priceRange = getPriceRange(restaurant);
+  const reviews = restaurant.reviews ?? [];
+
+  const handleContact = async () => {
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+
+    setIsContacting(true);
+
+    try {
+      const res = await fetch('/api/bookings', {
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const existingReservation = data.reservations?.find(
+          (reservation: ReservationSummary) =>
+            reservation.restaurantId === restaurant.id &&
+            reservation.status !== 'Cancelled'
+        );
+
+        if (existingReservation) {
+          window.location.href = `/bookings/${existingReservation.id}`;
+          return;
+        }
+      }
+
+      setIsBookingModalOpen(true);
+    } catch {
+      setIsBookingModalOpen(true);
+    } finally {
+      setIsContacting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#faf8f6] font-body text-[#3d2e28]">
@@ -33,6 +87,9 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
             alt={restaurant.name} 
             className="w-full h-full object-cover"
           />
+          <div className="absolute top-5 right-5 z-10">
+            <SaveRestaurantButton restaurantId={restaurant.id} initialSaved={isSaved} />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
           
           <div className="absolute bottom-0 left-0 w-full p-8 md:p-10 flex flex-col md:flex-row justify-between items-end gap-6">
@@ -48,8 +105,12 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
             </div>
             
             <div className="flex gap-4 shrink-0">
-              <button className="px-6 py-3.5 bg-white text-[#3d2e28] font-bold text-[13px] rounded-xl hover:bg-[#f0ede8] transition-colors shadow-sm">
-                {t.rest_contact}
+              <button
+                className="px-6 py-3.5 bg-white text-[#3d2e28] font-bold text-[13px] rounded-xl hover:bg-[#f0ede8] transition-colors shadow-sm disabled:opacity-60"
+                onClick={handleContact}
+                disabled={isContacting}
+              >
+                {isContacting ? t.common_loading : t.rest_contact}
               </button>
               <button 
                 className="px-6 py-3.5 bg-[#3d2e28] text-white font-bold text-[13px] rounded-xl hover:bg-[#2a1f1b] transition-colors shadow-sm border border-[#504442]"
@@ -89,12 +150,12 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {restaurant.menus?.map((menu: any) => (
+                {restaurant.menus?.map((menu: MenuLike) => (
                   <div key={menu.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-[#f0ede8] flex flex-col group">
                     <div className="h-48 overflow-hidden bg-[#e5e2dd]">
                       <img 
                         src={menu.imageUrl && menu.imageUrl !== 'default.png' ? menu.imageUrl : "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"} 
-                        alt={menu.dishNameVn} 
+                        alt={menu.dishNameVn || ''} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                     </div>
@@ -118,32 +179,58 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-extrabold text-[#3d2e28]">{t.rest_trust_reviews}</h2>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#8a6b32] font-bold text-[13px]">{t.rest_reviews_count.replace('{count}', '42')}</span>
+                  <span className="text-[#8a6b32] font-bold text-[13px]">{t.rest_reviews_count.replace('{count}', reviewCount.toString())}</span>
                   <span className="material-symbols-outlined text-[#8a6b32] text-[18px]">verified</span>
                 </div>
               </div>
               
-              <div className="bg-[#f0ede8]/50 p-6 rounded-3xl">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#3eb489] rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-white">
-                      <span className="material-symbols-outlined text-[20px]">face</span>
+              {reviewCount > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review: ReviewLike, index: number) => (
+                    <div key={review.id ?? index} className="bg-[#f0ede8]/50 p-6 rounded-3xl">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#3eb489] rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center text-white">
+                            {review.user?.avatarUrl ? (
+                              <img
+                                src={review.user.avatarUrl}
+                                alt={review.user.fullName || 'Reviewer'}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="material-symbols-outlined text-[20px]">face</span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-[14px] text-[#3d2e28]">{review.user?.fullName || 'Guest'}</div>
+                            <div className="text-[11px] text-[#a09491]">
+                              {review.createdAt
+                                ? new Date(review.createdAt).toLocaleDateString()
+                                : t.rest_review_author_loc}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${i <= (review.rating ?? 0) ? 'text-[#8a6b32]' : 'text-[#d4c3bf]'}`}
+                              fill="currentColor"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-[13px] text-[#504442] leading-relaxed italic">
+                        {review.comment || t.rest_review_placeholder}
+                      </p>
                     </div>
-                    <div>
-                      <div className="font-bold text-[14px] text-[#3d2e28]">Takeshi Sato</div>
-                      <div className="text-[11px] text-[#a09491]">{t.rest_review_author_loc}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="w-3.5 h-3.5 text-[#8a6b32]" fill="currentColor" />
-                    ))}
-                  </div>
+                  ))}
                 </div>
-                <p className="text-[13px] text-[#504442] leading-relaxed italic">
-                  "{t.rest_review_placeholder}"
-                </p>
-              </div>
+              ) : (
+                <div className="bg-[#f0ede8]/50 p-6 rounded-3xl text-[13px] text-[#827471]">
+                  {t.restaurant_no_reviews}
+                </div>
+              )}
             </div>
 
           </div>
@@ -164,7 +251,7 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
                 </div>
                 <div className="text-right">
                   <p className="text-[11px] font-bold text-[#827471] mb-1">{t.rest_budget}</p>
-                  <p className="text-[14px] text-[#3d2e28] font-bold">1.5M - 5M VND</p>
+                  <p className="text-[14px] text-[#3d2e28] font-bold">{priceRange}</p>
                 </div>
               </div>
             </div>

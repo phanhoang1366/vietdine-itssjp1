@@ -51,7 +51,7 @@ export default function BookingsPage() {
 
   async function fetchBookings() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
+      const res = await fetch('/api/bookings', {
         credentials: 'include',
       });
       if (res.ok) {
@@ -72,7 +72,7 @@ export default function BookingsPage() {
     if (!confirm(t.bookings_cancel_confirm)) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${id}/cancel`, {
+      const res = await fetch(`/api/bookings/${id}/cancel`, {
         method: 'PUT',
         credentials: 'include',
       });
