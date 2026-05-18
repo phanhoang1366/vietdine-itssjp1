@@ -2,10 +2,21 @@
 
 import dynamic from 'next/dynamic';
 import { Suspense, useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Search, SlidersHorizontal, User, Home, Map as MapIcon, Heart, Calendar, Settings, MapPin, Star } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, SlidersHorizontal, User, Home, Map as MapIcon, Heart, Calendar, Settings, MapPin, Star, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/context/AuthContext';
+import {
+  getAverageRating,
+  getPriceRange,
+  getPrimaryCategory,
+  isRestaurantAvailable,
+  type RestaurantLike,
+} from '@/lib/restaurant-utils';
+
+type FeatureFilterKey = 'isClean' | 'hasJpMenu' | 'hasAirCon' | 'hasJpStaff';
+type FeatureFilters = Record<FeatureFilterKey, boolean>;
 
 const MapLoading = () => {
   const { t } = useLanguage();
@@ -20,49 +31,92 @@ const MapComponent = dynamic(() => import('@/components/MapComponent'), {
 
 export function MapPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const q = searchParams.get('q') || '';
   
-  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantLike[]>([]);
   const [searchQuery, setSearchQuery] = useState(q);
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<FeatureFilters>({
+    isClean: false,
+    hasJpMenu: false,
+    hasAirCon: false,
+    hasJpStaff: false,
+  });
   const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
   
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Fetch restaurants based on query
     async function fetchRestaurants() {
       try {
-        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/restaurants`;
-        if (q) {
-          url += `?q=${encodeURIComponent(q)}`;
-        }
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        Object.entries(filters).forEach(([key, enabled]) => {
+          if (enabled) params.set(key, 'true');
+        });
+
+        const url = `/api/restaurants${params.toString() ? `?${params}` : ''}`;
         const res = await fetch(url);
         const data = await res.json();
         if (data && data.data) {
           setRestaurants(data.data);
-          // Set first as active
           if (data.data.length > 0) {
-            setActiveRestaurantId(data.data[0].id || data.data[0].res_id);
+            setActiveRestaurantId(data.data[0].id);
+          } else {
+            setActiveRestaurantId(null);
           }
         }
       } catch (error) {
         console.error('Failed to fetch restaurants:', error);
+        setRestaurants([]);
+        setActiveRestaurantId(null);
       }
     };
 
     fetchRestaurants();
-  }, [q]);
+  }, [q, filters]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.history.pushState(null, '', `/map?q=${encodeURIComponent(searchQuery)}`);
-      // Re-trigger fetch or rely on Next.js routing if we use router.push
-      // For a quick fix, reload:
-      window.location.search = `?q=${encodeURIComponent(searchQuery)}`;
+  const saveSearchKeyword = async (keyword: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      await fetch('/api/search-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ keyword }),
+      });
+    } catch {
+      // Search history should not block search results.
     }
   };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const keyword = searchQuery.trim();
+
+    if (!keyword) {
+      router.push('/map');
+      return;
+    }
+
+    await saveSearchKeyword(keyword);
+    router.push(`/map?q=${encodeURIComponent(keyword)}`);
+  };
+
+  const toggleFilter = (key: FeatureFilterKey) => {
+    setFilters((current) => ({ ...current, [key]: !current[key] }));
+  };
+
+  const featureFilterOptions: Array<{ key: FeatureFilterKey; label: string }> = [
+    { key: 'isClean', label: t.restaurant_clean },
+    { key: 'hasJpMenu', label: t.restaurant_jp_menu },
+    { key: 'hasAirCon', label: t.restaurant_air_con },
+    { key: 'hasJpStaff', label: t.restaurant_jp_staff },
+  ];
 
   // Handle map marker click
   const handleRestaurantSelect = (id: number) => {
@@ -151,9 +205,35 @@ export function MapPageContent() {
               />
             </form>
             
-            <button className="p-3 bg-white/95 backdrop-blur-md rounded-full text-[#3d2e28] shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-white transition-colors border border-white">
-              <SlidersHorizontal className="w-5 h-5" strokeWidth={1.5} />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowFilters((current) => !current)}
+                className="p-3 bg-white/95 backdrop-blur-md rounded-full text-[#3d2e28] shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-white transition-colors border border-white"
+              >
+                <SlidersHorizontal className="w-5 h-5" strokeWidth={1.5} />
+              </button>
+
+              {showFilters && (
+                <div className="absolute right-0 top-14 w-[280px] bg-white rounded-2xl p-3 shadow-[0_16px_40px_rgba(0,0,0,0.16)] border border-[#f0ede8] flex flex-col gap-2">
+                  {featureFilterOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => toggleFilter(option.key)}
+                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-colors ${
+                        filters[option.key]
+                          ? 'bg-[#3d2e28] text-white'
+                          : 'bg-[#faf8f6] text-[#3d2e28] hover:bg-[#f0ede8]'
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button className="p-3 bg-white/95 backdrop-blur-md rounded-full text-[#3d2e28] shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-white transition-colors border border-white">
               <User className="w-5 h-5" strokeWidth={1.5} />
             </button>
@@ -176,15 +256,14 @@ export function MapPageContent() {
             className="flex gap-6 overflow-x-auto pb-6 pt-4 pointer-events-auto snap-x snap-mandatory hide-scrollbar"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {restaurants.map((restaurant: any, index) => {
-              const resId = restaurant.id || restaurant.res_id;
+            {restaurants.map((restaurant) => {
+              const resId = restaurant.id;
               const isActive = resId === activeRestaurantId;
-              
-              // Mocking some data for visual fidelity to mockup
-              const isAvailable = index % 2 === 0; 
-              const price = index % 2 === 0 ? '¥¥' : '¥¥¥';
-              const rating = restaurant.reviews?.length > 0 ? '4.8' : '4.9'; // Mock
-              const imageUrl = "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
+              const isAvailable = isRestaurantAvailable(restaurant);
+              const price = getPriceRange(restaurant);
+              const rating = getAverageRating(restaurant);
+              const category = getPrimaryCategory(restaurant);
+              const imageUrl = restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80";
 
               return (
                 <div 
@@ -197,7 +276,7 @@ export function MapPageContent() {
                 >
                   {/* Card Image */}
                   <div className="h-[140px] relative overflow-hidden bg-[#e5e2dd]">
-                    <img src={imageUrl} alt={restaurant.name || restaurant.res_name} className="w-full h-full object-cover" />
+                    <img src={imageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
                     
                     {/* Badge */}
                     <div className="absolute top-4 right-4">
@@ -216,7 +295,7 @@ export function MapPageContent() {
                   {/* Card Content */}
                   <div className="p-5 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-[17px] text-[#3d2e28] line-clamp-1">{restaurant.name || restaurant.res_name}</h3>
+                      <h3 className="font-extrabold text-[17px] text-[#3d2e28] line-clamp-1">{restaurant.name}</h3>
                       <div className="flex items-center gap-1 text-[#775a19] font-bold text-[13px] shrink-0">
                         <Star className="w-3.5 h-3.5" fill="currentColor" /> {rating}
                       </div>
@@ -229,7 +308,7 @@ export function MapPageContent() {
 
                     <div className="flex items-center justify-between mt-1 pt-1">
                       <div className="text-[12px] font-bold text-[#827471]">
-                        鮨 • {price}
+                        {category} • {price}
                       </div>
                       
                       {isAvailable ? (

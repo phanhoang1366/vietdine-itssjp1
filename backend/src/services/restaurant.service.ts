@@ -1,5 +1,5 @@
 import prisma from '../db/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma, ReservationStatus } from '@prisma/client';
 
 export interface SearchRestaurantOptions {
   keyword?: string;
@@ -12,6 +12,79 @@ export interface SearchRestaurantOptions {
   radius?: number; // in kilometers
   page?: number;
   limit?: number;
+}
+
+const ACTIVE_RESERVATION_STATUSES = [
+  ReservationStatus.Waiting,
+  ReservationStatus.Confirmed,
+];
+
+const restaurantSearchInclude = {
+  menus: {
+    select: {
+      id: true,
+      dishNameVn: true,
+      dishNameJp: true,
+      imageUrl: true,
+      price: true,
+    },
+    take: 3,
+  },
+  reviews: {
+    select: {
+      rating: true,
+    },
+  },
+} satisfies Prisma.RestaurantInclude;
+
+function calculateDistanceKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+) {
+  const toRadians = (degree: number) => (degree * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function withActiveReservationGuestCounts<T extends { id: number }>(
+  restaurants: T[]
+) {
+  if (restaurants.length === 0) return restaurants;
+
+  const activeReservations = await prisma.reservation.groupBy({
+    by: ['restaurantId'],
+    where: {
+      restaurantId: { in: restaurants.map((restaurant) => restaurant.id) },
+      status: { in: ACTIVE_RESERVATION_STATUSES },
+    },
+    _sum: {
+      guestCount: true,
+    },
+  });
+
+  const activeGuestCounts = new Map(
+    activeReservations.map((reservation) => [
+      reservation.restaurantId,
+      reservation._sum.guestCount ?? 0,
+    ])
+  );
+
+  return restaurants.map((restaurant) => ({
+    ...restaurant,
+    activeReservationGuestCount: activeGuestCounts.get(restaurant.id) ?? 0,
+  }));
 }
 
 export const searchRestaurants = async (options: SearchRestaurantOptions) => {
@@ -47,67 +120,36 @@ export const searchRestaurants = async (options: SearchRestaurantOptions) => {
     ];
   }
 
-  // If geospatial search is required, we use raw query because Prisma lacks native geo filtering without PostGIS.
   if (lat !== undefined && lng !== undefined) {
-    // Haversine formula
-    const rawRestaurants: any[] = await prisma.$queryRaw`
-      SELECT 
-        r.*,
-        (
-          6371 * acos(
-            cos(radians(${lat})) * cos(radians(r.latitude)) *
-            cos(radians(r.longitude) - radians(${lng})) +
-            sin(radians(${lat})) * sin(radians(r.latitude))
-          )
-        ) AS distance
-      FROM "Restaurants" r
-      WHERE r.latitude IS NOT NULL 
-        AND r.longitude IS NOT NULL
-        ${isClean ? Prisma.sql`AND r.is_clean = true` : Prisma.sql``}
-        ${hasJpMenu ? Prisma.sql`AND r.has_jp_menu = true` : Prisma.sql``}
-        ${hasAirCon ? Prisma.sql`AND r.has_air_con = true` : Prisma.sql``}
-        ${hasJpStaff ? Prisma.sql`AND r.has_jp_staff = true` : Prisma.sql``}
-        ${keyword ? Prisma.sql`AND (r.res_name ILIKE ${'%' + keyword + '%'} OR r.address ILIKE ${'%' + keyword + '%'})` : Prisma.sql``}
-      HAVING (
-          6371 * acos(
-            cos(radians(${lat})) * cos(radians(r.latitude)) *
-            cos(radians(r.longitude) - radians(${lng})) +
-            sin(radians(${lat})) * sin(radians(r.latitude))
-          )
-        ) <= ${radius}
-      ORDER BY distance ASC
-      LIMIT ${limit}
-      OFFSET ${skip};
-    `;
+    const candidates = await prisma.restaurant.findMany({
+      where: {
+        ...where,
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      include: restaurantSearchInclude,
+    });
 
-    // To get count:
-    const countRes: any[] = await prisma.$queryRaw`
-      SELECT COUNT(*) as total
-      FROM (
-        SELECT r.res_id,
-        (
-          6371 * acos(
-            cos(radians(${lat})) * cos(radians(r.latitude)) *
-            cos(radians(r.longitude) - radians(${lng})) +
-            sin(radians(${lat})) * sin(radians(r.latitude))
-          )
-        ) AS distance
-        FROM "Restaurants" r
-        WHERE r.latitude IS NOT NULL 
-          AND r.longitude IS NOT NULL
-          ${isClean ? Prisma.sql`AND r.is_clean = true` : Prisma.sql``}
-          ${hasJpMenu ? Prisma.sql`AND r.has_jp_menu = true` : Prisma.sql``}
-          ${hasAirCon ? Prisma.sql`AND r.has_air_con = true` : Prisma.sql``}
-          ${hasJpStaff ? Prisma.sql`AND r.has_jp_staff = true` : Prisma.sql``}
-          ${keyword ? Prisma.sql`AND (r.res_name ILIKE ${'%' + keyword + '%'} OR r.address ILIKE ${'%' + keyword + '%'})` : Prisma.sql``}
-      ) AS geo_query
-      WHERE distance <= ${radius}
-    `;
+    const matchingRestaurants = candidates
+      .map((restaurant) => ({
+        ...restaurant,
+        distance: calculateDistanceKm(
+          lat,
+          lng,
+          restaurant.latitude as number,
+          restaurant.longitude as number
+        ),
+      }))
+      .filter((restaurant) => restaurant.distance <= radius)
+      .sort((a, b) => a.distance - b.distance);
 
-    const total = Number(countRes[0]?.total || 0);
+    const total = matchingRestaurants.length;
+    const data = await withActiveReservationGuestCounts(
+      matchingRestaurants.slice(skip, skip + limit)
+    );
 
     return {
-      data: rawRestaurants,
+      data,
       meta: {
         total,
         page,
@@ -123,16 +165,16 @@ export const searchRestaurants = async (options: SearchRestaurantOptions) => {
       where,
       skip,
       take: limit,
-      include: {
-        menus: { select: { dishNameVn: true, dishNameJp: true, imageUrl: true }, take: 1 },
-      },
+      include: restaurantSearchInclude,
       orderBy: { id: 'desc' },
     }),
     prisma.restaurant.count({ where }),
   ]);
 
+  const data = await withActiveReservationGuestCounts(restaurants);
+
   return {
-    data: restaurants,
+    data,
     meta: {
       total,
       page,
@@ -143,7 +185,7 @@ export const searchRestaurants = async (options: SearchRestaurantOptions) => {
 };
 
 export const getRestaurantById = async (id: number) => {
-  return prisma.restaurant.findUnique({
+  const restaurant = await prisma.restaurant.findUnique({
     where: { id },
     include: {
       menus: true,
@@ -158,4 +200,9 @@ export const getRestaurantById = async (id: number) => {
       }
     },
   });
+
+  if (!restaurant) return null;
+
+  const [restaurantWithCounts] = await withActiveReservationGuestCounts([restaurant]);
+  return restaurantWithCounts;
 };

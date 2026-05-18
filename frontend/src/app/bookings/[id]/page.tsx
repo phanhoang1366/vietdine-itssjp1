@@ -64,10 +64,10 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     async function fetchData() {
       try {
         const [resRes, msgRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings/${reservationId}`, {
+          fetch(`/api/bookings/${reservationId}`, {
             credentials: 'include',
           }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/messages`, {
+          fetch(`/api/chat/${reservationId}/messages`, {
             credentials: 'include',
           }),
         ]);
@@ -91,7 +91,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     fetchData();
 
     // Mark messages as read
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/read`, {
+    fetch(`/api/chat/${reservationId}/read`, {
       method: 'PUT',
       credentials: 'include',
     }).catch(() => {});
@@ -166,7 +166,7 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
       socket.emit('send_message', { reservationId, content });
     } else {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/chat/${reservationId}/messages`, {
+        await fetch(`/api/chat/${reservationId}/messages`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

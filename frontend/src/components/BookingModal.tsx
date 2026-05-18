@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -55,7 +56,7 @@ export default function BookingModal({
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/bookings`, {
+      const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -124,9 +125,9 @@ export default function BookingModal({
               </div>
             </div>
             <div className="booking-form-actions">
-              <a href="/bookings" className="booking-btn-primary">
+              <Link href="/bookings" className="booking-btn-primary">
                 {t.booking_modal_view_list}
-              </a>
+              </Link>
               <button type="button" className="booking-btn-secondary" onClick={handleClose}>
                 {t.booking_modal_close}
               </button>
