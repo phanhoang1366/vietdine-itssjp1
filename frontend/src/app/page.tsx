@@ -3,20 +3,66 @@
 import NavHeader from '@/components/NavHeader';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { Search, MapPin, Star, ChevronDown, CheckCircle2, Globe2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Search, MapPin, Star, CheckCircle2, Globe2, ShieldCheck, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getRestaurants } from '@/actions/restaurant';
+import { calculateDistanceKm, formatDistance, type Coordinates } from '@/lib/geo';
+import { getAverageRating, getPriceRange, type RestaurantLike } from '@/lib/restaurant-utils';
+
+type FeatureFilterKey = 'isClean' | 'hasJpMenu' | 'hasAirCon' | 'hasJpStaff';
+type FeatureFilters = Record<FeatureFilterKey, boolean>;
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantLike[]>([]);
+  const [filters, setFilters] = useState<FeatureFilters>({
+    isClean: false,
+    hasJpMenu: false,
+    hasAirCon: false,
+    hasJpStaff: false,
+  });
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const { t } = useLanguage();
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    getRestaurants().then(data => setRestaurants(data.slice(0, 6)));
-  }, []);
+    async function fetchRestaurants() {
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, enabled]) => {
+        if (enabled) params.set(key, 'true');
+      });
+
+      try {
+        const res = await fetch(`/api/restaurants${params.toString() ? `?${params}` : ''}`);
+        if (!res.ok) {
+          setRestaurants([]);
+          return;
+        }
+
+        const data = await res.json();
+        setRestaurants((data.data || []).slice(0, 6));
+      } catch {
+        setRestaurants([]);
+      }
+    }
+
+    fetchRestaurants();
+  }, [filters]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      () => setUserLocation(null),
+      { enableHighAccuracy: false, timeout: 7000 }
+    );
+  }, [isAuthenticated]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +70,17 @@ export default function Home() {
       window.location.href = `/map?q=${encodeURIComponent(searchQuery)}`;
     }
   };
+
+  const toggleFilter = (key: FeatureFilterKey) => {
+    setFilters((current) => ({ ...current, [key]: !current[key] }));
+  };
+
+  const featureFilterOptions: Array<{ key: FeatureFilterKey; label: string }> = [
+    { key: 'isClean', label: t.restaurant_clean },
+    { key: 'hasJpMenu', label: t.restaurant_jp_menu },
+    { key: 'hasAirCon', label: t.restaurant_air_con },
+    { key: 'hasJpStaff', label: t.restaurant_jp_staff },
+  ];
 
   // Search/List View for authenticated users (or the existing default view)
   const renderSearchView = () => (
@@ -86,62 +143,74 @@ export default function Home() {
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-          <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#f0ede8] text-[#3d2e28] rounded-xl text-[14px] font-bold hover:bg-[#f6f3ee] transition-colors whitespace-nowrap shadow-sm">
-            {t.home_filter_price} <ChevronDown className="w-4 h-4 text-[#827471]" />
-          </button>
-          <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#f0ede8] text-[#3d2e28] rounded-xl text-[14px] font-bold hover:bg-[#f6f3ee] transition-colors whitespace-nowrap shadow-sm">
-            {t.home_filter_rating} <ChevronDown className="w-4 h-4 text-[#827471]" />
-          </button>
-          <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#f0ede8] text-[#3d2e28] rounded-xl text-[14px] font-bold hover:bg-[#f6f3ee] transition-colors whitespace-nowrap shadow-sm">
-            {t.home_filter_category} <ChevronDown className="w-4 h-4 text-[#827471]" />
-          </button>
+          {featureFilterOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => toggleFilter(option.key)}
+              className={`flex items-center gap-2 px-5 py-3 border rounded-xl text-[14px] font-bold transition-colors whitespace-nowrap shadow-sm ${
+                filters[option.key]
+                  ? 'bg-[#3d2e28] border-[#3d2e28] text-white'
+                  : 'bg-white border-[#f0ede8] text-[#3d2e28] hover:bg-[#f6f3ee]'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {option.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {restaurants.map((restaurant) => (
-          <Link href={`/restaurant/${restaurant.id}`} key={restaurant.id}>
-            <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#f0ede8] group flex flex-col h-full">
-              <div className="relative h-[220px] bg-[#e5e2dd] overflow-hidden rounded-[20px] m-2">
-                <img 
-                  src={restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
-                  alt={restaurant.name} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-[#8a6b32]/90 backdrop-blur-sm text-white text-[11px] font-bold rounded-lg shadow-sm">
-                      {t.home_recommended}
-                    </span>
+        {restaurants.map((restaurant) => {
+          const avgRating = getAverageRating(restaurant);
+          const distance = formatDistance(calculateDistanceKm(userLocation, restaurant));
+          const priceRange = getPriceRange(restaurant);
+
+          return (
+            <Link href={`/restaurant/${restaurant.id}`} key={restaurant.id}>
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-[#f0ede8] group flex flex-col h-full">
+                <div className="relative h-[220px] bg-[#e5e2dd] overflow-hidden rounded-[20px] m-2">
+                  <img
+                    src={restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                    alt={restaurant.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1 bg-[#8a6b32]/90 backdrop-blur-sm text-white text-[11px] font-bold rounded-lg shadow-sm">
+                        {t.home_recommended}
+                      </span>
+                  </div>
+                </div>
+
+                <div className="p-5 flex-1 flex flex-col pt-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h2 className="font-extrabold text-[18px] text-[#3d2e28] line-clamp-1">{restaurant.name}</h2>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#fcd34d] text-[#775a19] rounded-md text-[13px] font-bold shrink-0">
+                      <Star className="w-3.5 h-3.5 fill-current" /> {avgRating}
+                    </div>
+                  </div>
+
+                  <p className="text-[13px] text-[#504442] mb-4 line-clamp-1">
+                    {restaurant.categories || t.home_cuisine_desc}
+                  </p>
+
+                  <div className="mt-auto flex items-center gap-4 text-[12px] text-[#827471] pt-4 border-t border-[#f0ede8]">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>{distance}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px]">payments</span>
+                      <span>{priceRange}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
-              <div className="p-5 flex-1 flex flex-col pt-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h2 className="font-extrabold text-[18px] text-[#3d2e28] line-clamp-1">{restaurant.name}</h2>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#fcd34d] text-[#775a19] rounded-md text-[13px] font-bold shrink-0">
-                    <Star className="w-3.5 h-3.5 fill-current" /> 4.9
-                  </div>
-                </div>
-                
-                <p className="text-[13px] text-[#504442] mb-4 line-clamp-1">
-                  {restaurant.categories || t.home_cuisine_desc}
-                </p>
-                
-                <div className="mt-auto flex items-center gap-4 text-[12px] text-[#827471] pt-4 border-t border-[#f0ede8]">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{restaurant.id * 0.5} km</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[14px]">payments</span>
-                    <span>$$$</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </main>
   );
@@ -236,35 +305,39 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {restaurants.slice(0, 3).map((restaurant) => (
-              <div key={restaurant.id} className="bg-[#faf8f6] rounded-3xl overflow-hidden shadow-sm border border-[#f0ede8] group flex flex-col h-full">
-                <div className="relative h-[220px] bg-[#e5e2dd] overflow-hidden rounded-[20px] m-2">
-                  <img 
-                    src={restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
-                    alt={restaurant.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4">
-                     <span className="px-3 py-1 bg-[#8a6b32]/90 backdrop-blur-sm text-white text-[11px] font-bold rounded-lg shadow-sm">
-                       {t.home_recommended}
-                     </span>
-                  </div>
-                </div>
-                
-                <div className="p-5 flex-1 flex flex-col pt-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h2 className="font-extrabold text-[18px] text-[#3d2e28] line-clamp-1">{restaurant.name}</h2>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#fcd34d] text-[#775a19] rounded-md text-[13px] font-bold shrink-0">
-                      <Star className="w-3.5 h-3.5 fill-current" /> 4.9
+            {restaurants.slice(0, 3).map((restaurant) => {
+              const avgRating = getAverageRating(restaurant);
+
+              return (
+                <div key={restaurant.id} className="bg-[#faf8f6] rounded-3xl overflow-hidden shadow-sm border border-[#f0ede8] group flex flex-col h-full">
+                  <div className="relative h-[220px] bg-[#e5e2dd] overflow-hidden rounded-[20px] m-2">
+                    <img
+                      src={restaurant.imageUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"}
+                      alt={restaurant.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4">
+                       <span className="px-3 py-1 bg-[#8a6b32]/90 backdrop-blur-sm text-white text-[11px] font-bold rounded-lg shadow-sm">
+                         {t.home_recommended}
+                       </span>
                     </div>
                   </div>
-                  
-                  <p className="text-[13px] text-[#504442] mb-4 line-clamp-1">
-                    {restaurant.categories || t.home_cuisine_desc}
-                  </p>
+
+                  <div className="p-5 flex-1 flex flex-col pt-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h2 className="font-extrabold text-[18px] text-[#3d2e28] line-clamp-1">{restaurant.name}</h2>
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#fcd34d] text-[#775a19] rounded-md text-[13px] font-bold shrink-0">
+                        <Star className="w-3.5 h-3.5 fill-current" /> {avgRating}
+                      </div>
+                    </div>
+
+                    <p className="text-[13px] text-[#504442] mb-4 line-clamp-1">
+                      {restaurant.categories || t.home_cuisine_desc}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-8 text-center sm:hidden">

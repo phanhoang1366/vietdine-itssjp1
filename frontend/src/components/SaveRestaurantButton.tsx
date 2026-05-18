@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
-import { toggleSavedRestaurant } from '@/actions/restaurant';
 
 interface Props {
   restaurantId: number;
@@ -16,7 +15,19 @@ export default function SaveRestaurantButton({ restaurantId, initialSaved }: Pro
   const handleToggle = async () => {
     setIsLoading(true);
     try {
-      const result = await toggleSavedRestaurant(restaurantId);
+      const res = await fetch(`/api/saved/${restaurantId}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!res.ok) return;
+
+      const result = await res.json();
       if (result.saved !== undefined) {
         setIsSaved(result.saved);
       }

@@ -182,6 +182,8 @@ type TranslationKeys = {
   auth_register_left_title: string;
   auth_register_left_sub: string;
   auth_user_login: string;
+  auth_user_register_label: string;
+  auth_owner_login_label: string;
   auth_google_soon: string;
   auth_fb_soon: string;
   auth_email_label: string;
@@ -568,6 +570,8 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_register_left_title: '洗練された\n美食の旅へ。',
     auth_register_left_sub: 'ベトナム料理の真髄を追求する、日本人駐在員と美食家のための限定コミュニティへようこそ。',
     auth_user_login: 'ユーザーログイン',
+    auth_user_register_label: 'ユーザー登録',
+    auth_owner_login_label: 'オーナーログイン',
     auth_google_soon: 'Google登録は近日公開予定です',
     auth_fb_soon: 'Facebook登録は近日公開予定です',
     auth_email_label: 'メールアドレス',
@@ -744,10 +748,10 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_placeholder_desc: 'キャンペーンの詳細を入力...',
     menu_placeholder_name: '牛肉フォー',
     menu_placeholder_ingredients: '米麺、牛肉、ハーブ、スパイス...',
-    auth_name_placeholder: '例：山田 太郎',
-    auth_owner_name_placeholder: '例：佐藤 花子',
-    auth_res_placeholder: '例：フォー・ハノイ',
-    auth_phone_placeholder: '090 1234 5678',
+    auth_name_placeholder: '',
+    auth_owner_name_placeholder: '',
+    auth_res_placeholder: '',
+    auth_phone_placeholder: '',
 
     nav_terms: '利用規約',
     nav_privacy: 'プライバシーポリシー',
@@ -947,6 +951,8 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_register_left_title: 'Hành trình\nẩm thực tinh tế.',
     auth_register_left_sub: 'Chào mừng đến cộng đồng dành cho người Nhật tại Việt Nam yêu thích ẩm thực Việt.',
     auth_user_login: 'Đăng nhập người dùng',
+    auth_user_register_label: 'Đăng ký người dùng',
+    auth_owner_login_label: 'Đăng nhập chủ quán',
     auth_google_soon: 'Đăng ký Google sắp ra mắt',
     auth_fb_soon: 'Đăng ký Facebook sắp ra mắt',
     auth_email_label: 'Email',
@@ -1123,10 +1129,10 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_placeholder_desc: 'Nhập chi tiết chiến dịch...',
     menu_placeholder_name: 'Phở bò',
     menu_placeholder_ingredients: 'Bánh phở, thịt bò, rau thơm, gia vị...',
-    auth_name_placeholder: 'VD: Nguyễn Văn A',
-    auth_owner_name_placeholder: 'VD: Nguyễn Văn B',
-    auth_res_placeholder: 'VD: Phở Hà Nội',
-    auth_phone_placeholder: '0123 456 789',
+    auth_name_placeholder: '',
+    auth_owner_name_placeholder: '',
+    auth_res_placeholder: '',
+    auth_phone_placeholder: '',
 
     nav_terms: 'Điều khoản sử dụng',
     nav_privacy: 'Chính sách bảo mật',
@@ -1325,6 +1331,8 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_register_left_title: 'A refined\nculinary journey.',
     auth_register_left_sub: 'Welcome to an exclusive community for Japanese expats and food lovers exploring Vietnamese cuisine.',
     auth_user_login: 'User Login',
+    auth_user_register_label: 'User Register',
+    auth_owner_login_label: 'Owner Login',
     auth_google_soon: 'Google sign-up coming soon',
     auth_fb_soon: 'Facebook sign-up coming soon',
     auth_email_label: 'Email',
@@ -1501,10 +1509,10 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_placeholder_desc: 'Enter campaign details...',
     menu_placeholder_name: 'Beef Pho',
     menu_placeholder_ingredients: 'Rice noodles, beef, herbs, spices...',
-    auth_name_placeholder: 'e.g. John Doe',
-    auth_owner_name_placeholder: 'e.g. Jane Smith',
-    auth_res_placeholder: 'e.g. Pho Hanoi',
-    auth_phone_placeholder: '0123 456 789',
+    auth_name_placeholder: '',
+    auth_owner_name_placeholder: '',
+    auth_res_placeholder: '',
+    auth_phone_placeholder: '',
 
     nav_terms: 'Terms of Service',
     nav_privacy: 'Privacy Policy',
