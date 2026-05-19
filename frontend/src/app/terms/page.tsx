@@ -27,7 +27,12 @@ export default function TermsPage() {
           </Link>
           <span className="text-xl font-extrabold tracking-tighter text-primary">VietDine</span>
         </div>
-        <button className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container transition-colors">
+        <button
+          type="button"
+          onClick={() => window.location.href = 'mailto:support@vietdine.local'}
+          className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container transition-colors"
+          aria-label="Contact support"
+        >
           <span className="material-symbols-outlined text-on-surface-variant text-lg">help</span>
         </button>
       </header>
@@ -139,7 +144,11 @@ export default function TermsPage() {
                 {t.terms_agree_btn}
                 <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </Link>
-              <button className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-colors w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-colors w-full sm:w-auto"
+              >
                 {t.terms_download_btn}
               </button>
             </div>

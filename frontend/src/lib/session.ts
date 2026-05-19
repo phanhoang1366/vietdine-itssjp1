@@ -12,7 +12,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   // In a real application, you might want to call a /api/auth/verify endpoint on the backend.
   // For UI purposes, we'll just return a mock payload if a session exists,
   // but it's better to use `getCurrentUser()` from `actions/auth.ts` to get actual user info.
-  return { userId: 0, roleId: 1 as any, expiresAt: new Date() };
+  return { userId: 0, roleId: 1, expiresAt: new Date() };
 }
 
 export async function deleteSession() {

@@ -49,9 +49,9 @@
   --color-background: #fcf9f4;
   --color-surface-tint: #755750;
 
-  --font-headline: "Manrope", sans-serif;
-  --font-body: "Manrope", sans-serif;
-  --font-label: "Manrope", sans-serif;
+  --font-headline: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-body: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-label: "Manrope", "Inter", "Segoe UI", Arial, sans-serif;
 
   --radius-DEFAULT: 0.125rem;
   --radius-lg: 0.25rem;

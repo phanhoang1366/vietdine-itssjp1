@@ -10,7 +10,7 @@ import AuthButton from '@/components/AuthButton';
 import Link from 'next/link';
 
 export default function PersonalInfoPage() {
-  const { user, isLoading, refreshUser } = useAuth();
+  const { user, isLoading } = useAuth();
   const { t } = useLanguage();
   const [state, action, pending] = useActionState(updateProfileAction, undefined);
 

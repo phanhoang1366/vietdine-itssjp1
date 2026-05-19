@@ -2,13 +2,15 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import './owner.css';
 
+const API_URL = `${process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
+
 async function getUser() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get('session')?.value;
   if (!sessionToken) return null;
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/profile`, {
+    const res = await fetch(`${API_URL}/users/profile`, {
       headers: { Cookie: `session=${sessionToken}` },
       cache: 'no-store',
     });

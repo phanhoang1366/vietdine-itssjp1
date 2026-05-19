@@ -2,12 +2,10 @@
 
 import { useGoogleLogin } from '@react-oauth/google';
 import { verifyGoogleToken } from '@/actions/auth';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function SocialLoginButtons() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
@@ -21,7 +19,7 @@ export default function SocialLoginButtons() {
         } else {
           alert(res.message);
         }
-      } catch (err) {
+      } catch {
         alert(t.auth_google_err);
       } finally {
         setLoading(false);

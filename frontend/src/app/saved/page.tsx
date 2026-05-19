@@ -4,7 +4,7 @@ import NavHeader from '@/components/NavHeader';
 import { useLanguage } from '@/context/LanguageContext';
 import { MapPin, Star, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { type MouseEvent, useEffect, useMemo, useState } from 'react';
 import { calculateDistanceKm, formatDistance, type Coordinates } from '@/lib/geo';
 import {
   getAverageRating,
@@ -18,6 +18,8 @@ export default function SavedPage() {
   const [savedRestaurants, setSavedRestaurants] = useState<RestaurantLike[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+  const [sortMode, setSortMode] = useState<'rating' | 'distance' | 'availability'>('rating');
+  const [availableOnly, setAvailableOnly] = useState(false);
 
   useEffect(() => {
     async function fetchSaved() {
@@ -53,6 +55,46 @@ export default function SavedPage() {
     );
   }, []);
 
+  const sortedRestaurants = useMemo(() => {
+    const restaurants = availableOnly
+      ? savedRestaurants.filter((restaurant) => isRestaurantAvailable(restaurant))
+      : [...savedRestaurants];
+
+    return restaurants.sort((a, b) => {
+      if (sortMode === 'distance') {
+        const distanceA = calculateDistanceKm(userLocation, a) ?? Number.POSITIVE_INFINITY;
+        const distanceB = calculateDistanceKm(userLocation, b) ?? Number.POSITIVE_INFINITY;
+        return distanceA - distanceB;
+      }
+
+      if (sortMode === 'availability') {
+        return Number(isRestaurantAvailable(b)) - Number(isRestaurantAvailable(a));
+      }
+
+      const ratingA = Number.parseFloat(getAverageRating(a));
+      const ratingB = Number.parseFloat(getAverageRating(b));
+      return (Number.isNaN(ratingB) ? 0 : ratingB) - (Number.isNaN(ratingA) ? 0 : ratingA);
+    });
+  }, [availableOnly, savedRestaurants, sortMode, userLocation]);
+
+  const handleUnsave = async (event: MouseEvent<HTMLButtonElement>, restaurantId: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      const res = await fetch(`/api/saved/${restaurantId}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        setSavedRestaurants((current) => current.filter((restaurant) => restaurant.id !== restaurantId));
+      }
+    } catch (err) {
+      console.error('Unsave error:', err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#faf8f6] font-body text-[#3d2e28]">
@@ -77,24 +119,56 @@ export default function SavedPage() {
         {/* Filter Bar */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#1c3821] text-white rounded-xl text-[13px] font-bold shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSortMode('rating')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-colors ${
+                sortMode === 'rating'
+                  ? 'bg-[#1c3821] text-white'
+                  : 'bg-[#f0ede8] text-[#3d2e28] hover:bg-[#eadecd]'
+              }`}
+            >
               <Star className="w-3.5 h-3.5 fill-current" /> {t.saved_filter_rating}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#f0ede8] text-[#3d2e28] rounded-xl text-[13px] font-bold hover:bg-[#eadecd] transition-colors">
+            <button
+              type="button"
+              onClick={() => setSortMode('distance')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-colors ${
+                sortMode === 'distance'
+                  ? 'bg-[#1c3821] text-white'
+                  : 'bg-[#f0ede8] text-[#3d2e28] hover:bg-[#eadecd]'
+              }`}
+            >
               <MapPin className="w-3.5 h-3.5" /> {t.saved_filter_distance}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#f0ede8] text-[#3d2e28] rounded-xl text-[13px] font-bold hover:bg-[#eadecd] transition-colors">
+            <button
+              type="button"
+              onClick={() => setSortMode('availability')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-colors ${
+                sortMode === 'availability'
+                  ? 'bg-[#1c3821] text-white'
+                  : 'bg-[#f0ede8] text-[#3d2e28] hover:bg-[#eadecd]'
+              }`}
+            >
               <span className="material-symbols-outlined text-[14px]">chair</span> {t.saved_filter_seats}
             </button>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-[#f0ede8] text-[#3d2e28] rounded-xl text-[13px] font-bold hover:bg-[#eadecd] transition-colors">
+          <button
+            type="button"
+            onClick={() => setAvailableOnly((current) => !current)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-colors ${
+              availableOnly
+                ? 'bg-[#1c3821] text-white shadow-sm'
+                : 'bg-[#f0ede8] text-[#3d2e28] hover:bg-[#eadecd]'
+            }`}
+          >
             <span className="material-symbols-outlined text-[14px]">tune</span> {t.saved_filter_btn}
           </button>
         </div>
 
-        {savedRestaurants && savedRestaurants.length > 0 ? (
+        {sortedRestaurants && sortedRestaurants.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedRestaurants.map((restaurant) => {
+            {sortedRestaurants.map((restaurant) => {
               const avgRating = getAverageRating(restaurant);
               const distance = formatDistance(calculateDistanceKm(userLocation, restaurant));
               const priceRange = getPriceRange(restaurant);
@@ -111,9 +185,14 @@ export default function SavedPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       {/* Heart Icon */}
-                      <div className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm z-10 cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={(event) => handleUnsave(event, restaurant.id)}
+                        className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm z-10 hover:bg-[#fff5f5] transition-colors"
+                        aria-label="Remove saved restaurant"
+                      >
                         <Heart className="w-5 h-5 text-[#ba1a1a] fill-current" />
-                      </div>
+                      </button>
                       
                       {/* Availability Badge */}
                       <div className="absolute bottom-4 left-4 z-10">

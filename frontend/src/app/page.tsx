@@ -123,7 +123,7 @@ export default function Home() {
           
           {/* Mock Pins */}
           <div className="absolute top-1/3 left-1/4 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-[#3d2e28]">
-            <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&w=100&q=80" className="w-10 h-10 rounded-full object-cover" />
+            <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&w=100&q=80" alt="" className="w-10 h-10 rounded-full object-cover" />
           </div>
           <div className="absolute bottom-1/4 right-1/3 w-10 h-10 bg-[#3d2e28] text-white rounded-full flex items-center justify-center shadow-lg">
             <MapPin className="w-5 h-5" />
