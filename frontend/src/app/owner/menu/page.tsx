@@ -14,6 +14,14 @@ interface MenuItem {
   price: number | null;
 }
 
+interface MenuFormData {
+  dishNameVn: string;
+  dishNameJp: string;
+  ingredients: string;
+  imageUrl: string;
+  price: number;
+}
+
 export default function MenuManagement() {
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +29,7 @@ export default function MenuManagement() {
   const [editItem, setEditItem] = useState<MenuItem | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
 
   useEffect(() => {
     fetchMenus();
@@ -43,7 +51,7 @@ export default function MenuManagement() {
     }
   };
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: MenuFormData) => {
     setIsSubmitting(true);
     try {
       const url = editItem
@@ -89,6 +97,7 @@ export default function MenuManagement() {
     if (!price) return '—';
     return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
   };
+  const cycleLocale = () => setLocale(locale === 'ja' ? 'vi' : locale === 'vi' ? 'en' : 'ja');
 
   return (
     <div className="owner-layout">
@@ -97,10 +106,10 @@ export default function MenuManagement() {
         <div className="owner-topbar">
           <h1>{t.owner_menu}</h1>
           <div className="topbar-actions">
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={cycleLocale}>
               <span className="material-symbols-outlined">language</span>
             </button>
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={() => window.location.href = '/profile'}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>

@@ -20,7 +20,7 @@ type FeatureFilters = Record<FeatureFilterKey, boolean>;
 
 const MapLoading = () => {
   const { t } = useLanguage();
-  return <div className="w-full h-full flex items-center justify-center bg-[#252831] text-white/50">{t.map_loading}</div>;
+  return <div className="w-full h-full flex items-center justify-center bg-[#eef3f1] text-[#827471]">{t.map_loading}</div>;
 };
 
 // Dynamically import map to avoid SSR issues
@@ -53,6 +53,7 @@ export function MapPageContent() {
     async function fetchRestaurants() {
       try {
         const params = new URLSearchParams();
+        params.set('limit', '60');
         if (q) params.set('q', q);
         Object.entries(filters).forEach(([key, enabled]) => {
           if (enabled) params.set(key, 'true');
@@ -118,16 +119,68 @@ export function MapPageContent() {
     { key: 'hasJpStaff', label: t.restaurant_jp_staff },
   ];
 
+  const scrollToRestaurantCard = (id: number) => {
+    if (!carouselRef.current) return;
+
+    const card = carouselRef.current.querySelector(`[data-id="${id}"]`) as HTMLElement;
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  };
+
   // Handle map marker click
   const handleRestaurantSelect = (id: number) => {
     setActiveRestaurantId(id);
-    // Scroll carousel to the selected item
-    if (carouselRef.current) {
-      const card = carouselRef.current.querySelector(`[data-id="${id}"]`) as HTMLElement;
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }
+    scrollToRestaurantCard(id);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      isClean: false,
+      hasJpMenu: false,
+      hasAirCon: false,
+      hasJpStaff: false,
+    });
+  };
+
+  const handleShowRestaurants = () => {
+    clearFilters();
+    setShowFilters(false);
+    if (q) router.push('/map');
+    if (restaurants[0]?.id) {
+      setActiveRestaurantId(restaurants[0].id);
+      scrollToRestaurantCard(restaurants[0].id);
     }
+  };
+
+  const handleShowFeatured = () => {
+    setShowFilters(false);
+    setFilters({
+      isClean: true,
+      hasJpMenu: true,
+      hasAirCon: false,
+      hasJpStaff: false,
+    });
+    if (q) router.push('/map');
+  };
+
+  const handleMapTab = () => {
+    setShowFilters(false);
+    if (activeRestaurantId) {
+      scrollToRestaurantCard(activeRestaurantId);
+    }
+  };
+
+  const handleReserveActiveRestaurant = () => {
+    if (activeRestaurantId) {
+      router.push(`/restaurant/${activeRestaurantId}`);
+    } else {
+      router.push('/map');
+    }
+  };
+
+  const handleProfileClick = () => {
+    router.push(isAuthenticated ? '/profile' : '/login');
   };
 
   return (
@@ -174,7 +227,12 @@ export function MapPageContent() {
 
         {/* Bottom CTA */}
         <div className="p-6">
-          <button className="w-full py-[18px] bg-[#361f1a] text-white rounded-xl font-bold text-[13px] hover:bg-[#4e342e] transition-colors shadow-[0_8px_16px_rgba(54,31,26,0.15)]">
+          <button
+            type="button"
+            onClick={handleReserveActiveRestaurant}
+            disabled={!activeRestaurantId}
+            className="w-full py-[18px] bg-[#361f1a] text-white rounded-xl font-bold text-[13px] hover:bg-[#4e342e] transition-colors shadow-[0_8px_16px_rgba(54,31,26,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {t.map_reserve_btn}
           </button>
         </div>
@@ -187,9 +245,27 @@ export function MapPageContent() {
         <header className="absolute top-0 left-0 w-full h-[90px] flex items-center justify-between px-8 z-10 pointer-events-none">
           {/* Top Links */}
           <div className="flex items-center gap-8 pointer-events-auto">
-            <div className="font-bold text-[15px] text-[#3d2e28] border-b-[3px] border-[#3d2e28] pb-1 cursor-pointer">{t.map_map_tab}</div>
-            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">{t.map_restaurants_tab}</div>
-            <div className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors cursor-pointer drop-shadow-sm">{t.map_featured_tab}</div>
+            <button
+              type="button"
+              onClick={handleMapTab}
+              className="font-bold text-[15px] text-[#3d2e28] border-b-[3px] border-[#3d2e28] pb-1"
+            >
+              {t.map_map_tab}
+            </button>
+            <button
+              type="button"
+              onClick={handleShowRestaurants}
+              className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors drop-shadow-sm"
+            >
+              {t.map_restaurants_tab}
+            </button>
+            <button
+              type="button"
+              onClick={handleShowFeatured}
+              className="font-bold text-[15px] text-[#827471] hover:text-[#3d2e28] transition-colors drop-shadow-sm"
+            >
+              {t.map_featured_tab}
+            </button>
           </div>
 
           {/* Search & Actions */}
@@ -234,14 +310,19 @@ export function MapPageContent() {
                 </div>
               )}
             </div>
-            <button className="p-3 bg-white/95 backdrop-blur-md rounded-full text-[#3d2e28] shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-white transition-colors border border-white">
+            <button
+              type="button"
+              onClick={handleProfileClick}
+              className="p-3 bg-white/95 backdrop-blur-md rounded-full text-[#3d2e28] shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:bg-white transition-colors border border-white"
+              aria-label={isAuthenticated ? t.nav_profile : t.auth_login}
+            >
               <User className="w-5 h-5" strokeWidth={1.5} />
             </button>
           </div>
         </header>
 
         {/* Map */}
-        <div className="flex-1 relative z-0 bg-[#252831]">
+        <div className="flex-1 relative z-0 bg-[#eef3f1]">
           <MapComponent 
             restaurants={restaurants} 
             activeRestaurantId={activeRestaurantId}
@@ -311,17 +392,17 @@ export function MapPageContent() {
                         {category} • {price}
                       </div>
                       
-                      {isAvailable ? (
-                        <Link href={`/restaurant/${resId}`}>
-                          <button className="px-5 py-2.5 bg-[#361f1a] text-white text-[12px] font-bold rounded-full hover:bg-[#4e342e] transition-colors shadow-sm">
-                            {t.restaurant_details}
-                          </button>
-                        </Link>
-                      ) : (
-                        <button className="px-5 py-2.5 bg-[#e5e2dd] text-[#827471] text-[12px] font-bold rounded-full cursor-not-allowed">
-                          {t.map_waitlist}
-                        </button>
-                      )}
+                      <Link
+                        href={`/restaurant/${resId}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className={`px-5 py-2.5 text-[12px] font-bold rounded-full transition-colors shadow-sm ${
+                          isAvailable
+                            ? 'bg-[#361f1a] text-white hover:bg-[#4e342e]'
+                            : 'bg-[#e5e2dd] text-[#3d2e28] hover:bg-[#d9d2ca]'
+                        }`}
+                      >
+                        {isAvailable ? t.restaurant_details : t.map_waitlist}
+                      </Link>
                     </div>
                   </div>
                 </div>

@@ -1,13 +1,24 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { FormState } from '@/lib/definitions';
 import { cookies } from 'next/headers';
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
+const API_URL = `${process.env.SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
+
+function getSetCookieHeaders(res: Response) {
+  const headers = res.headers as Headers & { getSetCookie?: () => string[] };
+  const setCookieHeaders = headers.getSetCookie?.();
+
+  if (setCookieHeaders && setCookieHeaders.length > 0) {
+    return setCookieHeaders;
+  }
+
+  const setCookie = res.headers.get('set-cookie');
+  return setCookie ? [setCookie] : [];
+}
 
 async function forwardSessionCookie(res: Response) {
-  const setCookieHeaders = res.headers.getSetCookie();
+  const setCookieHeaders = getSetCookieHeaders(res);
   const cookieStore = await cookies();
   
   for (const header of setCookieHeaders) {

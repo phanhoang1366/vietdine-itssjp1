@@ -61,7 +61,7 @@ export default function RegisterPage() {
             VietDine
           </Link>
           <Link
-            href="/login"
+            href="/terms"
             className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center"
           >
             <span className="material-symbols-outlined text-on-surface-variant text-lg">help</span>
@@ -70,9 +70,9 @@ export default function RegisterPage() {
 
         {/* Desktop Help Button */}
         <div className="hidden lg:flex justify-end px-8 py-6">
-          <button className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container transition-colors">
+          <Link href="/terms" className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container transition-colors">
             <span className="material-symbols-outlined text-on-surface-variant text-lg">help</span>
-          </button>
+          </Link>
         </div>
 
         {/* Form Content */}
@@ -195,6 +195,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 className="w-8 h-8 rounded-sm bg-[#a0938f] flex items-center justify-center hover:bg-[#827471] transition-colors"
+                onClick={() => window.location.href = 'mailto:support@vietdine.local'}
               >
                 <span className="material-symbols-outlined text-white text-[16px]">mail</span>
               </button>

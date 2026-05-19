@@ -17,6 +17,11 @@ interface Reservation {
 }
 
 type FilterStatus = 'all' | 'Waiting' | 'Confirmed' | 'Cancelled';
+type StatusText = {
+  owner_res_action_confirm: string;
+  owner_res_tab_all: string;
+  owner_res_action_reject: string;
+};
 
 function getInitials(name: string) {
   return name
@@ -45,7 +50,7 @@ function getStatusClass(status: string) {
   }
 }
 
-function getStatusLabel(status: string, t: any) {
+function getStatusLabel(status: string, t: StatusText) {
   switch (status) {
     case 'Confirmed': return t.owner_res_action_confirm;
     case 'Waiting': return t.owner_res_tab_all; // Assuming wait status string or fallback
@@ -58,7 +63,7 @@ export default function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
-  const { t, locale } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
 
   useEffect(() => {
     fetchReservations();
@@ -106,6 +111,7 @@ export default function ReservationsPage() {
     Confirmed: reservations.filter((r) => r.status === 'Confirmed').length,
     Cancelled: reservations.filter((r) => r.status === 'Cancelled').length,
   };
+  const cycleLocale = () => setLocale(locale === 'ja' ? 'vi' : locale === 'vi' ? 'en' : 'ja');
 
   return (
     <div className="owner-layout">
@@ -114,10 +120,10 @@ export default function ReservationsPage() {
         <div className="owner-topbar">
           <h1>{t.owner_reservations}</h1>
           <div className="topbar-actions">
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={cycleLocale}>
               <span className="material-symbols-outlined">language</span>
             </button>
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={() => window.location.href = '/profile'}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>

@@ -2,13 +2,20 @@
 
 import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import L from 'leaflet';
 import ReactDOMServer from 'react-dom/server';
 import { Utensils } from 'lucide-react';
 
+interface MapRestaurant {
+  id?: number;
+  res_id?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
 interface MapComponentProps {
-  restaurants: any[];
+  restaurants: MapRestaurant[];
   activeRestaurantId?: number | null;
   onRestaurantSelect?: (id: number) => void;
 }
@@ -51,15 +58,14 @@ const createCustomIcon = (isActive: boolean) => {
 };
 
 export default function MapComponent({ restaurants, activeRestaurantId, onRestaurantSelect }: MapComponentProps) {
-  // Default to Hanoi center
-  const [center, setCenter] = useState<[number, number]>([21.028511, 105.804817]);
-
-  // Center map on the first restaurant if available
-  useEffect(() => {
-    if (restaurants && restaurants.length > 0 && restaurants[0].latitude && restaurants[0].longitude) {
-      setCenter([restaurants[0].latitude, restaurants[0].longitude]);
-    }
-  }, [restaurants]);
+  const activeRestaurant = restaurants?.find(
+    (restaurant) => restaurant.id === activeRestaurantId || restaurant.res_id === activeRestaurantId
+  );
+  const focusedRestaurant = activeRestaurant || restaurants?.[0];
+  const center: [number, number] =
+    focusedRestaurant?.latitude && focusedRestaurant?.longitude
+      ? [focusedRestaurant.latitude, focusedRestaurant.longitude]
+      : [21.028511, 105.804817];
 
   return (
     <MapContainer 
@@ -70,27 +76,28 @@ export default function MapComponent({ restaurants, activeRestaurantId, onRestau
     >
       <MapUpdater center={center} />
       
-      {/* Dark Matter Tiles */}
+      {/* Light map tiles */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
       
       {/* Custom Zoom Control positioned bottom right above carousel */}
       <ZoomControl position="bottomright" />
 
       {restaurants.map((restaurant) => {
-        if (restaurant.latitude && restaurant.longitude) {
-          const isActive = restaurant.id === activeRestaurantId || restaurant.res_id === activeRestaurantId;
+        const restaurantId = restaurant.id ?? restaurant.res_id;
+        if (restaurant.latitude && restaurant.longitude && restaurantId) {
+          const isActive = restaurantId === activeRestaurantId;
           return (
             <Marker 
-              key={restaurant.id || restaurant.res_id} 
+              key={restaurantId} 
               position={[restaurant.latitude, restaurant.longitude]}
               icon={createCustomIcon(isActive)}
               eventHandlers={{
                 click: () => {
                   if (onRestaurantSelect) {
-                    onRestaurantSelect(restaurant.id || restaurant.res_id);
+                    onRestaurantSelect(restaurantId);
                   }
                 },
               }}

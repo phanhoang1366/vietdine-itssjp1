@@ -7,6 +7,7 @@ import { logout } from '@/actions/auth';
 import { 
   MessageSquare, Calendar, User, Bookmark, Lock, History, LogOut, Settings, ChevronRight
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, isLoading } = useAuth();
@@ -54,9 +55,13 @@ export default function ProfilePage() {
             <div className="w-[120px] h-[120px] bg-[#4e342e] rounded-2xl overflow-hidden flex items-center justify-center shadow-lg komorebi-shadow">
               <span className="text-4xl font-extrabold text-white">{initials}</span>
             </div>
-            <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#8a6b32] text-white rounded-full flex items-center justify-center border-[3px] border-[#faf8f6] shadow-sm hover:bg-[#775a19] transition-colors">
+            <Link
+              href="/profile/personal-info"
+              className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#8a6b32] text-white rounded-full flex items-center justify-center border-[3px] border-[#faf8f6] shadow-sm hover:bg-[#775a19] transition-colors"
+              aria-label={t.profile_personal_info}
+            >
               <Settings className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
 
           <h1 className="text-3xl font-extrabold mb-3 tracking-tight">

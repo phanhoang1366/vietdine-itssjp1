@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 import { useSocket } from '@/context/SocketContext';
 import { useAuth } from '@/context/AuthContext';
@@ -32,6 +32,12 @@ interface Message {
   };
 }
 
+type StatusText = {
+  owner_res_action_confirm: string;
+  owner_res_tab_all: string;
+  owner_res_action_reject: string;
+};
+
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -56,7 +62,7 @@ function formatTime(dateStr: string, locale: string) {
   });
 }
 
-function getStatusLabel(status: string, t: any) {
+function getStatusLabel(status: string, t: StatusText) {
   switch (status) {
     case 'Confirmed': return t.owner_res_action_confirm;
     case 'Waiting': return t.owner_res_tab_all;
@@ -92,13 +98,9 @@ export default function OwnerChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevSelectedIdRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch reservations
-  useEffect(() => {
-    fetchReservations();
-  }, []);
-
-  async function fetchReservations() {
+  const fetchReservations = useCallback(async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations`, {
         credentials: 'include',
@@ -133,7 +135,12 @@ export default function OwnerChatPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  // Fetch reservations
+  useEffect(() => {
+    fetchReservations();
+  }, [fetchReservations]);
 
   // Load messages when selecting a reservation
   useEffect(() => {
@@ -276,6 +283,14 @@ export default function OwnerChatPage() {
     }
   };
 
+  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setNewMessage((current) => current ? `${current} [${file.name}]` : `[${file.name}]`);
+    event.target.value = '';
+  };
+
   // Update reservation status
   const updateStatus = async (id: number, status: 'Confirmed' | 'Cancelled') => {
     try {
@@ -309,7 +324,7 @@ export default function OwnerChatPage() {
         <div className="owner-topbar">
           <h1>{t.owner_chat_title}</h1>
           <div className="topbar-actions">
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={() => window.location.href = '/owner/reservations'}>
               <span className="material-symbols-outlined">notifications</span>
             </button>
           </div>
@@ -486,7 +501,13 @@ export default function OwnerChatPage() {
                 {/* Input */}
                 {selectedReservation?.status !== 'Cancelled' && (
                   <form className="chat-detail-input" onSubmit={sendMessage}>
-                    <button type="button" className="chat-attach-btn">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileSelected}
+                    />
+                    <button type="button" className="chat-attach-btn" onClick={() => fileInputRef.current?.click()}>
                       <span className="material-symbols-outlined">add_circle</span>
                     </button>
                     <input
