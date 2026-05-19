@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-manrope",
-});
 
 export const metadata: Metadata = {
   title: "VietDine - ベトダイン",
@@ -30,7 +23,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning className={`${manrope.variable} min-h-screen font-body antialiased overflow-x-hidden`}>
+      <body suppressHydrationWarning className="min-h-screen font-body antialiased overflow-x-hidden">
         <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
           <LanguageProvider>
             <AuthProvider>

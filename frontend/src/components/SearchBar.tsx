@@ -119,7 +119,12 @@ export default function SearchBar() {
             )}
           </div>
 
-          <button className="p-2 rounded-full hover:bg-surface-container transition-colors">
+          <button
+            type="button"
+            onClick={() => router.push('/bookings')}
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            aria-label={t.nav_bookings}
+          >
             <Bell className="w-5 h-5" />
           </button>
         </div>
@@ -128,7 +133,13 @@ export default function SearchBar() {
       {/* Dropdown Overlay */}
       {isFocused && (
         <div className="absolute top-[72px] left-0 w-full bg-surface shadow-xl border-t border-outline-variant rounded-b-3xl overflow-hidden pb-8">
-          <SearchOverlay onSelect={(q) => { setQuery(q); setIsFocused(false); router.push(`/map?q=${encodeURIComponent(q)}`); }} />
+          <SearchOverlay
+            onSelect={(q) => { setQuery(q); setIsFocused(false); router.push(`/map?q=${encodeURIComponent(q)}`); }}
+            onViewAllHistory={() => {
+              setIsFocused(false);
+              router.push('/profile/history');
+            }}
+          />
         </div>
       )}
     </div>

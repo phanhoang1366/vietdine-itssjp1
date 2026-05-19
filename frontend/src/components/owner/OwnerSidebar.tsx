@@ -9,6 +9,8 @@ export default function OwnerSidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const ownerName = user?.restaurantName || user?.name || 'Kyoto Garden Hanoi';
+  const avatarUrl = user?.avatarUrl || 'https://i.pravatar.cc/150?img=11';
 
   const navItems = [
     { name: t.owner_dashboard, path: '/owner', icon: 'dashboard' },
@@ -16,7 +18,7 @@ export default function OwnerSidebar() {
     { name: t.owner_menu, path: '/owner/menu', icon: 'restaurant_menu' },
     { name: t.owner_promotions, path: '/owner/promotions', icon: 'campaign' },
     { name: t.owner_chat, path: '/owner/chat', icon: 'chat' },
-    { name: t.nav_settings, path: '/owner/settings', icon: 'settings' },
+    { name: t.nav_settings, path: '/profile/personal-info', icon: 'settings' },
   ];
 
   return (
@@ -29,10 +31,10 @@ export default function OwnerSidebar() {
       {/* Restaurant Info */}
       <div className="sidebar-profile">
         <div className="profile-avatar overflow-hidden">
-          <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" className="w-full h-full object-cover" />
+          <img src={avatarUrl} alt={ownerName} className="w-full h-full object-cover" />
         </div>
         <div className="profile-info">
-          <p className="profile-name">Kyoto Garden Hanoi</p>
+          <p className="profile-name">{ownerName}</p>
           <p className="profile-role">{t.profile_role_admin}</p>
         </div>
       </div>

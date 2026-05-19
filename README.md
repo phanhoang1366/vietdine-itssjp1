@@ -137,6 +137,49 @@ Bây giờ bạn có thể truy cập vào `http://localhost:3000` để trải 
 
 ---
 
+## 🐳 Chạy bằng Docker Compose
+
+Cách này phù hợp khi gửi project cho người khác chạy thử mà không cần cài Node.js/PostgreSQL trực tiếp trên máy.
+
+### 1. Tạo file môi trường
+
+```bash
+cp .env.example .env
+```
+
+Nếu không dùng Google OAuth thì có thể để trống các biến `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+
+### 2. Build và chạy toàn bộ hệ thống
+
+```bash
+docker compose up --build
+```
+
+Docker Compose sẽ chạy:
+- `db`: PostgreSQL 16
+- `backend`: Express API ở `http://localhost:3001`
+- `frontend`: Next.js ở `http://localhost:3000`
+
+Khi backend start, container sẽ tự chạy `prisma db push` để tạo schema. Mặc định `RUN_SEED=true`, nên dữ liệu demo sẽ được nạp vào database. File seed hiện tại chạy theo chế độ non-destructive, không xóa toàn bộ dữ liệu cũ nếu không đặt `RESET_DB=true`.
+
+### 3. Lệnh hữu ích
+
+```bash
+docker compose down
+docker compose up --build
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+Nếu muốn xóa sạch database Docker và seed lại từ đầu:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+---
+
 ## 🌐 Triển khai lên Production (Deployment)
 
 Vì hệ thống sử dụng Websocket, bạn cần chia tách nền tảng deploy:

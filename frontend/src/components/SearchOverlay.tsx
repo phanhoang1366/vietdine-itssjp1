@@ -1,14 +1,16 @@
 'use client';
 
-import { History, MapPin } from 'lucide-react';
+import { History } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface SearchOverlayProps {
   onSelect: (query: string) => void;
+  onViewAllHistory?: () => void;
 }
 
-export default function SearchOverlay({ onSelect }: SearchOverlayProps) {
+export default function SearchOverlay({ onSelect, onViewAllHistory }: SearchOverlayProps) {
   const { t } = useLanguage();
 
   const popularSearches = [
@@ -25,23 +27,23 @@ export default function SearchOverlay({ onSelect }: SearchOverlayProps) {
     { label: 'Traditional', image: '/images/traditional.png', icon: 'festival' },
   ];
 
-  const recentSearches = [
+  const [recentSearches, setRecentSearches] = useState([
     { 
       title: 'Hanoi Pho', 
-      subtitle: 'Category: Vietnamese', 
-      time: '10 mins ago' 
+      subtitle: `${t.search_recent_item_cat}: Vietnamese`, 
+      time: t.search_recent_item_time_min.replace('{count}', '10') 
     },
     { 
       title: 'Hidden Cafe', 
-      subtitle: 'Category: Cafe', 
-      time: '2 hours ago' 
+      subtitle: `${t.search_recent_item_cat}: Cafe`, 
+      time: t.search_recent_item_time_hour.replace('{count}', '2') 
     },
     { 
       title: 'Premium Sushi', 
-      subtitle: 'Location: District 1', 
-      time: 'Yesterday' 
+      subtitle: `${t.search_recent_item_loc}: District 1`, 
+      time: t.search_recent_item_time_yesterday 
     },
-  ];
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto flex gap-12 px-6 pt-6">
@@ -52,7 +54,7 @@ export default function SearchOverlay({ onSelect }: SearchOverlayProps) {
         <div>
           <h3 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-            Popular Searches
+            {t.search_popular_searches}
           </h3>
           <div className="flex flex-wrap gap-3">
             {popularSearches.map((item, idx) => (
@@ -72,7 +74,7 @@ export default function SearchOverlay({ onSelect }: SearchOverlayProps) {
         <div>
           <h3 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-            Popular Categories
+            {t.search_popular_categories}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex gap-4">
@@ -112,30 +114,49 @@ export default function SearchOverlay({ onSelect }: SearchOverlayProps) {
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-sm font-bold text-primary flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-            Recent Searches
+            {t.search_recent_searches}
           </h3>
-          <button className="text-xs text-on-surface-variant hover:text-primary">Clear All</button>
+          <button
+            type="button"
+            onClick={() => setRecentSearches([])}
+            disabled={recentSearches.length === 0}
+            className="text-xs text-on-surface-variant hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {t.search_delete_history}
+          </button>
         </div>
 
         <div className="flex flex-col gap-6 flex-1">
-          {recentSearches.map((item, idx) => (
-            <div key={idx} className="flex gap-4 items-start cursor-pointer group" onClick={() => onSelect(item.title)}>
-              <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:bg-primary group-hover:text-white transition-colors">
-                <History className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-bold text-sm text-on-surface group-hover:text-primary">{item.title}</h4>
-                  <span className="text-[10px] text-on-surface-variant">{item.time}</span>
+          {recentSearches.length > 0 ? (
+            recentSearches.map((item, idx) => (
+              <div key={idx} className="flex gap-4 items-start cursor-pointer group" onClick={() => onSelect(item.title)}>
+                <div className="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant group-hover:bg-primary group-hover:text-white transition-colors">
+                  <History className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-on-surface-variant mt-1">{item.subtitle}</p>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-bold text-sm text-on-surface group-hover:text-primary">{item.title}</h4>
+                    <span className="text-[10px] text-on-surface-variant">{item.time}</span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant mt-1">{item.subtitle}</p>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 text-center text-on-surface-variant text-sm">
+              <History className="w-8 h-8 mb-3 opacity-50" />
+              {t.history_empty}
             </div>
-          ))}
+          )}
         </div>
 
-        <button className="w-full mt-8 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:opacity-90 transition-opacity">
-          View All
+        <button
+          type="button"
+          onClick={onViewAllHistory}
+          className="w-full mt-8 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!onViewAllHistory}
+        >
+          {t.search_view_all_history}
         </button>
       </div>
     </div>

@@ -15,6 +15,15 @@ interface Promotion {
   isActive: boolean;
 }
 
+interface PromotionFormData {
+  title: string;
+  description: string;
+  discountPercent: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +31,7 @@ export default function PromotionsPage() {
   const [editItem, setEditItem] = useState<Promotion | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
 
   useEffect(() => {
     fetchPromotions();
@@ -44,7 +53,7 @@ export default function PromotionsPage() {
     }
   };
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: PromotionFormData) => {
     setIsSubmitting(true);
     try {
       const url = editItem
@@ -98,6 +107,7 @@ export default function PromotionsPage() {
     const now = new Date();
     return promo.isActive && new Date(promo.startDate) <= now && new Date(promo.endDate) >= now;
   };
+  const cycleLocale = () => setLocale(locale === 'ja' ? 'vi' : locale === 'vi' ? 'en' : 'ja');
 
   return (
     <div className="owner-layout">
@@ -106,10 +116,10 @@ export default function PromotionsPage() {
         <div className="owner-topbar">
           <h1>{t.owner_promotions}</h1>
           <div className="topbar-actions">
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={cycleLocale}>
               <span className="material-symbols-outlined">language</span>
             </button>
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={() => window.location.href = '/profile'}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>

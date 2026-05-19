@@ -32,6 +32,9 @@ export default function AuthInput({
   const { t } = useLanguage();
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+  const errorMessage = error && error.length > 0
+    ? t[error[0] as keyof typeof t] || error[0]
+    : null;
 
   return (
     <div className="group relative">
@@ -84,9 +87,9 @@ export default function AuthInput({
           </button>
         )}
       </div>
-      {error && error.length > 0 && (
+      {errorMessage && (
         <p className="mt-1.5 ml-1 text-xs text-error font-medium">
-          {(t as any)[error[0]] || error[0]}
+          {errorMessage}
         </p>
       )}
     </div>

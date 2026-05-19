@@ -1,10 +1,33 @@
 import { Router, Request, Response } from 'express';
 import { LoginFormSchema } from '../lib/definitions';
-import { findUserByEmail, findOrCreateGoogleUser } from '../services/user.service';
-import { createSessionCookie, clearSessionCookie } from '../lib/session';
+import { findUserByEmail, findOrCreateGoogleUser, findUserById, toSafeUser } from '../services/user.service';
+import { createSessionCookie, clearSessionCookie, decrypt } from '../lib/session';
 import { compareSync } from 'bcryptjs';
 
 const router = Router();
+
+// GET /api/auth/session
+router.get('/session', async (req: Request, res: Response) => {
+  const sessionCookie = req.cookies.session;
+
+  if (!sessionCookie) {
+    return res.json({ user: null });
+  }
+
+  const session = await decrypt(sessionCookie);
+  if (!session) {
+    clearSessionCookie(res);
+    return res.json({ user: null });
+  }
+
+  const user = await findUserById(session.userId);
+  if (!user) {
+    clearSessionCookie(res);
+    return res.json({ user: null });
+  }
+
+  res.json({ user: toSafeUser(user) });
+});
 
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response) => {

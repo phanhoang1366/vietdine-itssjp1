@@ -106,9 +106,13 @@ export default function NavHeader() {
 
         {isAuthenticated ? (
           <>
-            <button className="p-2 rounded-full hover:bg-black/5 transition-colors">
+            <Link
+              href="/bookings"
+              className="p-2 rounded-full hover:bg-black/5 transition-colors"
+              aria-label={t.nav_bookings}
+            >
               <Bell className="w-[22px] h-[22px]" strokeWidth={1.5} />
-            </button>
+            </Link>
 
             <div ref={userRef} className="relative ml-1">
               <button

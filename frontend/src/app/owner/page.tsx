@@ -7,18 +7,44 @@ import StatCard from '@/components/owner/StatCard';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface DashboardData {
-  restaurant: any;
+  restaurant: {
+    name: string;
+    address: string | null;
+    openingHours: string | null;
+    imageUrl: string | null;
+    categories: string | null;
+    maxSeats: number | null;
+  } | null;
   stats: {
     totalReservations: number;
     averageRating: number;
     reviewCount: number;
     satisfaction: number;
-    activePromotion: any;
-    recentReservations: any[];
+    activePromotion: {
+      title: string;
+      discountPercent: number;
+    } | null;
+    recentReservations: Array<{
+      id: number;
+      revDatetime: string;
+      guestCount: number;
+      status: 'Waiting' | 'Confirmed' | 'Cancelled';
+      user: {
+        fullName: string;
+      };
+    }>;
   };
 }
 
-function formatDate(dateStr: string, t: any, locale: string) {
+interface OwnerStatusText {
+  common_today: string;
+  common_tomorrow: string;
+  owner_res_action_confirm: string;
+  owner_res_tab_all: string;
+  owner_res_action_reject: string;
+}
+
+function formatDate(dateStr: string, t: OwnerStatusText, locale: string) {
   const date = new Date(dateStr);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
@@ -50,7 +76,7 @@ function getStatusClass(status: string) {
   }
 }
 
-function getStatusLabel(status: string, t: any) {
+function getStatusLabel(status: string, t: OwnerStatusText) {
   switch (status) {
     case 'Confirmed': return t.owner_res_action_confirm;
     case 'Waiting': return t.owner_res_tab_all; // or a specific waiting status if available
@@ -62,7 +88,7 @@ function getStatusLabel(status: string, t: any) {
 export default function OwnerDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { t, locale } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
 
   useEffect(() => {
     fetchDashboard();
@@ -100,6 +126,7 @@ export default function OwnerDashboard() {
 
   const restaurant = data?.restaurant;
   const stats = data?.stats;
+  const cycleLocale = () => setLocale(locale === 'ja' ? 'vi' : locale === 'vi' ? 'en' : 'ja');
 
   return (
     <div className="owner-layout">
@@ -109,10 +136,10 @@ export default function OwnerDashboard() {
         <div className="owner-topbar">
           <h1>{t.owner_dashboard_title}</h1>
           <div className="topbar-actions">
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={cycleLocale}>
               <span className="material-symbols-outlined" style={{ fontWeight: 300 }}>language</span>
             </button>
-            <button className="topbar-btn">
+            <button type="button" className="topbar-btn" onClick={() => window.location.href = '/profile'}>
               <span className="material-symbols-outlined" style={{ fontWeight: 300 }}>account_circle</span>
             </button>
           </div>
@@ -168,7 +195,7 @@ export default function OwnerDashboard() {
               </div>
               <div className="reservation-list">
                 {stats?.recentReservations && stats.recentReservations.length > 0 ? (
-                  stats.recentReservations.map((rev: any) => (
+                  stats.recentReservations.map((rev) => (
                     <div key={rev.id} className="reservation-item">
                       <div className="res-avatar">
                         {getInitials(rev.user.fullName)}
@@ -182,7 +209,12 @@ export default function OwnerDashboard() {
                       <span className={`res-status ${getStatusClass(rev.status)}`}>
                         {getStatusLabel(rev.status, t)}
                       </span>
-                      <button className="res-actions-btn">
+                      <button
+                        type="button"
+                        className="res-actions-btn"
+                        onClick={() => window.location.href = '/owner/chat'}
+                        aria-label={t.owner_chat}
+                      >
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>more_vert</span>
                       </button>
                     </div>
@@ -244,7 +276,11 @@ export default function OwnerDashboard() {
                   </span>
                 </div>
 
-                <button className="edit-profile-btn">
+                <button
+                  type="button"
+                  className="edit-profile-btn"
+                  onClick={() => window.location.href = '/profile/personal-info'}
+                >
                   {t.owner_info_edit_btn}
                 </button>
               </div>

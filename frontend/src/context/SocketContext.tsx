@@ -21,12 +21,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      // Disconnect if user logs out
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-      }
+      setSocket(null);
+      setIsConnected(false);
       return;
     }
 
@@ -55,6 +51,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     return () => {
       newSocket.disconnect();
+      setSocket(null);
+      setIsConnected(false);
     };
   }, [isAuthenticated]);
 
