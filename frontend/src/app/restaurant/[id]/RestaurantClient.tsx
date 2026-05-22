@@ -22,12 +22,6 @@ interface RestaurantClientProps {
   isSaved: boolean;
 }
 
-interface ReservationSummary {
-  id: number;
-  restaurantId: number;
-  status: string;
-}
-
 export default function RestaurantClient({ restaurant, isSaved }: RestaurantClientProps) {
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
@@ -38,6 +32,17 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
   const reviewCount = getReviewCount(restaurant);
   const priceRange = getPriceRange(restaurant);
   const reviews = restaurant.reviews ?? [];
+  const ownerContact = restaurant.owner?.emailPhone;
+  const ownerContactHref = ownerContact
+    ? ownerContact.includes('@')
+      ? `mailto:${ownerContact}`
+      : `tel:${ownerContact}`
+    : null;
+
+  const formatMenuPrice = (price?: number | null) => {
+    if (!price) return 'N/A';
+    return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
+  };
 
   const handleContact = async () => {
     if (!isAuthenticated) {
@@ -48,27 +53,18 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
     setIsContacting(true);
 
     try {
-      const res = await fetch('/api/bookings', {
+      const res = await fetch(`/api/chat/direct/restaurants/${restaurant.id}`, {
+        method: 'POST',
         credentials: 'include',
       });
 
       if (res.ok) {
         const data = await res.json();
-        const existingReservation = data.reservations?.find(
-          (reservation: ReservationSummary) =>
-            reservation.restaurantId === restaurant.id &&
-            reservation.status !== 'Cancelled'
-        );
-
-        if (existingReservation) {
-          window.location.href = `/bookings/${existingReservation.id}`;
-          return;
-        }
+        window.location.href = `/messages/${data.conversation.id}`;
+        return;
       }
-
-      setIsBookingModalOpen(true);
     } catch {
-      setIsBookingModalOpen(true);
+      // Keep the user on the detail page if the direct conversation cannot be created.
     } finally {
       setIsContacting(false);
     }
@@ -150,19 +146,39 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {restaurant.menus?.map((menu: MenuLike) => (
+                {restaurant.menus?.map((menu: MenuLike) => {
+                  const activePromotion = menu.promotions?.[0];
+                  const discountedPrice = activePromotion && menu.price
+                    ? Math.round(Math.max(0, menu.price * (100 - activePromotion.discountPercent) / 100))
+                    : null;
+
+                  return (
                   <div key={menu.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-[#f0ede8] flex flex-col group">
-                    <div className="h-48 overflow-hidden bg-[#e5e2dd]">
+                    <div className="h-48 overflow-hidden bg-[#e5e2dd] relative">
                       <img 
                         src={menu.imageUrl && menu.imageUrl !== 'default.png' ? menu.imageUrl : "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"} 
                         alt={menu.dishNameVn || ''} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
+                      {activePromotion && (
+                        <span className="absolute top-3 right-3 px-3 py-1 bg-[#c62828] text-white text-[11px] font-bold rounded-full shadow-sm">
+                          {activePromotion.discountPercent}% OFF
+                        </span>
+                      )}
                     </div>
                     <div className="p-6 flex-1 flex flex-col">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-extrabold text-lg text-[#3d2e28]">{menu.dishNameVn}</h3>
-                        <span className="font-bold text-[15px] text-[#3d2e28]">{menu.price ? `${(menu.price / 1000).toLocaleString()}k` : 'N/A'}</span>
+                        <div className="text-right">
+                          {discountedPrice !== null ? (
+                            <>
+                              <span className="block font-bold text-[15px] text-[#c62828]">{formatMenuPrice(discountedPrice)}</span>
+                              <span className="block text-[11px] text-[#a09491] line-through">{formatMenuPrice(menu.price)}</span>
+                            </>
+                          ) : (
+                            <span className="font-bold text-[15px] text-[#3d2e28]">{formatMenuPrice(menu.price)}</span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-[11px] font-bold text-[#8a6b32] mb-3">{menu.dishNameJp}</p>
                       <p className="text-[13px] text-[#827471] mb-6 leading-relaxed flex-1">
@@ -170,7 +186,8 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
                       </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -276,6 +293,24 @@ export default function RestaurantClient({ restaurant, isSaved }: RestaurantClie
                 </li>
               </ul>
             </div>
+
+            {ownerContact && (
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#f0ede8]">
+                <h3 className="font-bold text-[14px] mb-4 text-[#3d2e28] flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-[#8a6b32]">support_agent</span>
+                  {t.restaurant_owner}
+                </h3>
+                <p className="text-[13px] font-bold text-[#3d2e28] mb-2">
+                  {restaurant.owner?.fullName || restaurant.name}
+                </p>
+                <a
+                  href={ownerContactHref || undefined}
+                  className="text-[13px] font-semibold text-[#6d4c41] hover:text-[#3d2e28] break-all"
+                >
+                  {ownerContact}
+                </a>
+              </div>
+            )}
 
             <div className="pt-2">
               <button 

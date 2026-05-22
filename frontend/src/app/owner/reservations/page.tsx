@@ -12,6 +12,7 @@ interface Reservation {
   status: 'Waiting' | 'Confirmed' | 'Cancelled';
   user: {
     fullName: string;
+    emailPhone: string;
     avatarUrl: string | null;
   };
 }
@@ -19,7 +20,14 @@ interface Reservation {
 type FilterStatus = 'all' | 'Waiting' | 'Confirmed' | 'Cancelled';
 type StatusText = {
   owner_res_action_confirm: string;
+  owner_res_status_confirmed: string;
+  owner_res_status_waiting: string;
+  owner_res_status_cancelled: string;
   owner_res_tab_all: string;
+  owner_res_col_contact: string;
+  owner_res_tab_waiting: string;
+  owner_res_tab_confirmed: string;
+  owner_res_tab_cancelled: string;
   owner_res_action_reject: string;
 };
 
@@ -52,9 +60,9 @@ function getStatusClass(status: string) {
 
 function getStatusLabel(status: string, t: StatusText) {
   switch (status) {
-    case 'Confirmed': return t.owner_res_action_confirm;
-    case 'Waiting': return t.owner_res_tab_all; // Assuming wait status string or fallback
-    case 'Cancelled': return t.owner_res_action_reject;
+    case 'Confirmed': return t.owner_res_status_confirmed;
+    case 'Waiting': return t.owner_res_status_waiting;
+    case 'Cancelled': return t.owner_res_status_cancelled;
     default: return status;
   }
 }
@@ -71,7 +79,7 @@ export default function ReservationsPage() {
 
   async function fetchReservations() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations`, {
+      const res = await fetch('/api/owner/reservations', {
         credentials: 'include',
       });
       if (res.ok) {
@@ -87,7 +95,7 @@ export default function ReservationsPage() {
 
   const updateStatus = async (id: number, status: 'Confirmed' | 'Cancelled') => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/reservations/${id}`, {
+      const res = await fetch(`/api/owner/reservations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -134,9 +142,9 @@ export default function ReservationsPage() {
           <div className="filter-tabs">
             {([
               { key: 'all', label: t.owner_res_tab_all },
-              { key: 'Waiting', label: t.owner_res_tab_all }, // Reusing tab_all or fallback for waiting
-              { key: 'Confirmed', label: t.owner_res_action_confirm },
-              { key: 'Cancelled', label: t.owner_res_action_reject },
+              { key: 'Waiting', label: t.owner_res_tab_waiting },
+              { key: 'Confirmed', label: t.owner_res_tab_confirmed },
+              { key: 'Cancelled', label: t.owner_res_tab_cancelled },
             ] as { key: FilterStatus; label: string }[]).map((tab) => (
               <button
                 key={tab.key}
@@ -165,6 +173,7 @@ export default function ReservationsPage() {
                 <thead>
                   <tr>
                     <th>{t.owner_res_col_customer}</th>
+                    <th>{t.owner_res_col_contact}</th>
                     <th>{t.owner_res_col_datetime}</th>
                     <th>{t.owner_res_col_guests}</th>
                     <th>{t.owner_res_col_status}</th>
@@ -185,6 +194,11 @@ export default function ReservationsPage() {
                               <p className="dish-name-jp">{rev.user.fullName}</p>
                             </div>
                           </div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.86rem', color: '#5a4a44' }}>
+                            {rev.user.emailPhone}
+                          </span>
                         </td>
                         <td>
                           <span style={{ fontWeight: 500 }}>{dt.date}</span>
@@ -217,7 +231,7 @@ export default function ReservationsPage() {
                             </div>
                           )}
                           {rev.status !== 'Waiting' && (
-                            <span style={{ fontSize: '0.82rem', color: '#8a7a74' }}>—</span>
+                            <span aria-hidden="true" />
                           )}
                         </td>
                       </tr>

@@ -7,10 +7,15 @@ import { useLanguage } from '@/context/LanguageContext';
 
 export default function OwnerSidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { t } = useLanguage();
-  const ownerName = user?.restaurantName || user?.name || 'Kyoto Garden Hanoi';
-  const avatarUrl = user?.avatarUrl || 'https://i.pravatar.cc/150?img=11';
+  const ownerName = isLoading ? '...' : user?.restaurantName || user?.name || t.profile_role_admin;
+  const initials = ownerName
+    .split(' ')
+    .map((part) => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   const navItems = [
     { name: t.owner_dashboard, path: '/owner', icon: 'dashboard' },
@@ -31,7 +36,11 @@ export default function OwnerSidebar() {
       {/* Restaurant Info */}
       <div className="sidebar-profile">
         <div className="profile-avatar overflow-hidden">
-          <img src={avatarUrl} alt={ownerName} className="w-full h-full object-cover" />
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt={ownerName} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-bold text-[#5a4a44]">{initials}</span>
+          )}
         </div>
         <div className="profile-info">
           <p className="profile-name">{ownerName}</p>

@@ -185,12 +185,30 @@ export const searchRestaurants = async (options: SearchRestaurantOptions) => {
 };
 
 export const getRestaurantById = async (id: number) => {
+  const now = new Date();
   const restaurant = await prisma.restaurant.findUnique({
     where: { id },
     include: {
-      menus: true,
+      menus: {
+        include: {
+          promotions: {
+            where: {
+              isActive: true,
+              startDate: { lte: now },
+              endDate: { gte: now },
+            },
+            select: {
+              id: true,
+              title: true,
+              discountPercent: true,
+              endDate: true,
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
       owner: {
-        select: { fullName: true, avatarUrl: true },
+        select: { fullName: true, avatarUrl: true, emailPhone: true },
       },
       reviews: {
         include: {

@@ -233,6 +233,8 @@ type TranslationKeys = {
 
   owner_stat_total_res: string;
   owner_stat_weekly_sales: string;
+  owner_stat_menu_items: string;
+  owner_stat_reviews: string;
   owner_promo_active_label: string;
   owner_promo_update: string;
   owner_recent_res_title: string;
@@ -288,15 +290,24 @@ type TranslationKeys = {
   promo_form_status_inactive: string;
   promo_form_start_date: string;
   promo_form_end_date: string;
+  promo_form_menu_label: string;
+  promo_form_menu_all: string;
   promo_form_btn_add: string;
 
   owner_res_tab_all: string;
+  owner_res_tab_waiting: string;
+  owner_res_tab_confirmed: string;
+  owner_res_tab_cancelled: string;
   owner_res_empty: string;
   owner_res_empty_sub: string;
   owner_res_col_customer: string;
+  owner_res_col_contact: string;
   owner_res_col_datetime: string;
   owner_res_col_guests: string;
   owner_res_col_status: string;
+  owner_res_status_waiting: string;
+  owner_res_status_confirmed: string;
+  owner_res_status_cancelled: string;
   owner_res_action_confirm: string;
   owner_res_action_reject: string;
 
@@ -342,6 +353,9 @@ type TranslationKeys = {
   auth_or_continue: string;
   auth_google_err: string;
   auth_google_fail: string;
+  auth_facebook_err: string;
+  auth_facebook_fail: string;
+  auth_facebook_config_missing: string;
   auth_provider_soon: string;
 
   validation_email_req: string;
@@ -405,6 +419,13 @@ type TranslationKeys = {
   owner_chat_no_messages: string;
   owner_chat_items_count: string;
   owner_chat_user_suffix: string;
+  chat_edit: string;
+  chat_save_edit: string;
+  chat_cancel_edit: string;
+  chat_retract: string;
+  chat_retracted: string;
+  chat_edited: string;
+  chat_retract_confirm: string;
 
   bookings_not_found: string;
   bookings_back_to_list: string;
@@ -615,6 +636,8 @@ const translations: Record<Locale, TranslationKeys> = {
 
     owner_stat_total_res: '総予約数',
     owner_stat_weekly_sales: '週次売上',
+    owner_stat_menu_items: '登録メニュー数',
+    owner_stat_reviews: '{count}件のレビュー',
     owner_promo_active_label: '実施中のプロモーション',
     owner_promo_update: '更新する',
     owner_recent_res_title: '最近の予約',
@@ -670,15 +693,24 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_form_status_inactive: '無効',
     promo_form_start_date: '開始日',
     promo_form_end_date: '終了日',
+    promo_form_menu_label: '対象メニュー',
+    promo_form_menu_all: '店舗全体',
     promo_form_btn_add: '作成する',
 
     owner_res_tab_all: 'すべて',
+    owner_res_tab_waiting: '確認待ち',
+    owner_res_tab_confirmed: '確認済み',
+    owner_res_tab_cancelled: 'キャンセル',
     owner_res_empty: '予約がありません',
     owner_res_empty_sub: '該当する予約がまだありません',
     owner_res_col_customer: 'お客様',
+    owner_res_col_contact: '連絡先',
     owner_res_col_datetime: '日時',
     owner_res_col_guests: '人数',
     owner_res_col_status: 'ステータス',
+    owner_res_status_waiting: '確認待ち',
+    owner_res_status_confirmed: '確認済み',
+    owner_res_status_cancelled: 'キャンセル済み',
     owner_res_action_confirm: '確認する',
     owner_res_action_reject: '拒否',
 
@@ -724,6 +756,9 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_or_continue: 'または次で続ける',
     auth_google_err: 'Googleログイン中にエラーが発生しました。',
     auth_google_fail: 'Googleログインに失敗しました。',
+    auth_facebook_err: 'Facebookログイン中にエラーが発生しました。',
+    auth_facebook_fail: 'Facebookログインに失敗しました。',
+    auth_facebook_config_missing: 'FacebookログインにはFacebook App IDの設定が必要です。',
     auth_provider_soon: '{provider}ログインは近日公開予定です',
 
     validation_email_req: 'メールアドレスを入力してください',
@@ -787,6 +822,13 @@ const translations: Record<Locale, TranslationKeys> = {
     owner_chat_no_messages: 'まだメッセージがありません',
     owner_chat_items_count: '{count}件',
     owner_chat_user_suffix: '様',
+    chat_edit: '編集',
+    chat_save_edit: '保存',
+    chat_cancel_edit: 'キャンセル',
+    chat_retract: '取り消し',
+    chat_retracted: 'メッセージを取り消しました',
+    chat_edited: '編集済み',
+    chat_retract_confirm: 'このメッセージを取り消しますか？',
 
     bookings_not_found: '予約が見つかりません',
     bookings_back_to_list: '予約一覧に戻る',
@@ -902,7 +944,7 @@ const translations: Record<Locale, TranslationKeys> = {
     bookings_cancelled: 'Đã hủy',
     bookings_cancel_btn: 'Hủy',
     bookings_cancel_confirm: 'Bạn có muốn hủy đặt bàn không?',
-    bookings_guests: 'khách',
+    bookings_guests: ' khách',
     bookings_loading: 'Đang tải...',
 
     saved_title: 'Danh sách đã lưu',
@@ -996,6 +1038,8 @@ const translations: Record<Locale, TranslationKeys> = {
 
     owner_stat_total_res: 'Tổng lượt đặt',
     owner_stat_weekly_sales: 'Doanh thu tuần',
+    owner_stat_menu_items: 'Món trong thực đơn',
+    owner_stat_reviews: '{count} đánh giá',
     owner_promo_active_label: 'Khuyến mãi đang chạy',
     owner_promo_update: 'Cập nhật',
     owner_recent_res_title: 'Đặt bàn gần đây',
@@ -1051,15 +1095,24 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_form_status_inactive: 'Vô hiệu',
     promo_form_start_date: 'Ngày bắt đầu',
     promo_form_end_date: 'Ngày kết thúc',
+    promo_form_menu_label: 'Món áp dụng',
+    promo_form_menu_all: 'Toàn bộ nhà hàng',
     promo_form_btn_add: 'Tạo',
 
     owner_res_tab_all: 'Tất cả',
+    owner_res_tab_waiting: 'Chờ xác nhận',
+    owner_res_tab_confirmed: 'Đã xác nhận',
+    owner_res_tab_cancelled: 'Đã hủy',
     owner_res_empty: 'Không có đặt bàn',
     owner_res_empty_sub: 'Không tìm thấy lượt đặt bàn nào',
     owner_res_col_customer: 'Khách hàng',
+    owner_res_col_contact: 'Liên hệ',
     owner_res_col_datetime: 'Thời gian',
     owner_res_col_guests: 'Số người',
     owner_res_col_status: 'Trạng thái',
+    owner_res_status_waiting: 'Chờ xác nhận',
+    owner_res_status_confirmed: 'Đã xác nhận',
+    owner_res_status_cancelled: 'Đã hủy',
     owner_res_action_confirm: 'Xác nhận',
     owner_res_action_reject: 'Từ chối',
 
@@ -1105,6 +1158,9 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_or_continue: 'Hoặc tiếp tục với',
     auth_google_err: 'Có lỗi xảy ra khi đăng nhập Google.',
     auth_google_fail: 'Đăng nhập Google thất bại.',
+    auth_facebook_err: 'Có lỗi xảy ra khi đăng nhập Facebook.',
+    auth_facebook_fail: 'Đăng nhập Facebook thất bại.',
+    auth_facebook_config_missing: 'Cần cấu hình Facebook App ID để đăng nhập bằng Facebook.',
     auth_provider_soon: 'Đăng nhập {provider} sẽ sớm ra mắt',
 
     validation_email_req: 'Vui lòng nhập email',
@@ -1168,6 +1224,13 @@ const translations: Record<Locale, TranslationKeys> = {
     owner_chat_no_messages: 'Chưa có tin nhắn nào',
     owner_chat_items_count: '{count} mục',
     owner_chat_user_suffix: '',
+    chat_edit: 'Sửa',
+    chat_save_edit: 'Lưu',
+    chat_cancel_edit: 'Hủy',
+    chat_retract: 'Thu hồi',
+    chat_retracted: 'Tin nhắn đã được thu hồi',
+    chat_edited: 'Đã chỉnh sửa',
+    chat_retract_confirm: 'Bạn có muốn thu hồi tin nhắn này?',
     bookings_not_found: 'Không tìm thấy đặt bàn',
     bookings_back_to_list: 'Quay lại danh sách đặt bàn',
     bookings_wait_confirmation: 'Chờ xác nhận',
@@ -1282,7 +1345,7 @@ const translations: Record<Locale, TranslationKeys> = {
     bookings_cancelled: 'Cancelled',
     bookings_cancel_btn: 'Cancel',
     bookings_cancel_confirm: 'Cancel this reservation?',
-    bookings_guests: 'guests',
+    bookings_guests: ' guests',
     bookings_loading: 'Loading...',
 
     saved_title: 'Saved List',
@@ -1376,6 +1439,8 @@ const translations: Record<Locale, TranslationKeys> = {
 
     owner_stat_total_res: 'Total Reservations',
     owner_stat_weekly_sales: 'Weekly Sales',
+    owner_stat_menu_items: 'Menu Items',
+    owner_stat_reviews: '{count} reviews',
     owner_promo_active_label: 'Active Promotion',
     owner_promo_update: 'Update',
     owner_recent_res_title: 'Recent Reservations',
@@ -1431,15 +1496,24 @@ const translations: Record<Locale, TranslationKeys> = {
     promo_form_status_inactive: 'Inactive',
     promo_form_start_date: 'Start Date',
     promo_form_end_date: 'End Date',
+    promo_form_menu_label: 'Applied Dish',
+    promo_form_menu_all: 'Whole restaurant',
     promo_form_btn_add: 'Create',
 
     owner_res_tab_all: 'All',
+    owner_res_tab_waiting: 'Waiting',
+    owner_res_tab_confirmed: 'Confirmed',
+    owner_res_tab_cancelled: 'Cancelled',
     owner_res_empty: 'No reservations',
     owner_res_empty_sub: 'No reservations found',
     owner_res_col_customer: 'Customer',
+    owner_res_col_contact: 'Contact',
     owner_res_col_datetime: 'Date & Time',
     owner_res_col_guests: 'Guests',
     owner_res_col_status: 'Status',
+    owner_res_status_waiting: 'Waiting',
+    owner_res_status_confirmed: 'Confirmed',
+    owner_res_status_cancelled: 'Cancelled',
     owner_res_action_confirm: 'Confirm',
     owner_res_action_reject: 'Reject',
 
@@ -1485,6 +1559,9 @@ const translations: Record<Locale, TranslationKeys> = {
     auth_or_continue: 'or continue with',
     auth_google_err: 'An error occurred during Google login.',
     auth_google_fail: 'Google login failed.',
+    auth_facebook_err: 'An error occurred during Facebook login.',
+    auth_facebook_fail: 'Facebook login failed.',
+    auth_facebook_config_missing: 'Facebook App ID must be configured before Facebook login can be used.',
     auth_provider_soon: '{provider} login is coming soon',
 
     validation_email_req: 'Please enter your email',
@@ -1548,6 +1625,13 @@ const translations: Record<Locale, TranslationKeys> = {
     owner_chat_no_messages: 'No messages yet',
     owner_chat_items_count: '{count} items',
     owner_chat_user_suffix: '',
+    chat_edit: 'Edit',
+    chat_save_edit: 'Save',
+    chat_cancel_edit: 'Cancel',
+    chat_retract: 'Retract',
+    chat_retracted: 'Message retracted',
+    chat_edited: 'Edited',
+    chat_retract_confirm: 'Retract this message?',
     bookings_not_found: 'Booking not found',
     bookings_back_to_list: 'Back to bookings list',
     bookings_wait_confirmation: 'Waiting for confirmation',

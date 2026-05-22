@@ -83,100 +83,197 @@ vietdine-itssjp1/
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt (Installation Guide)
+## 🚀 Hướng dẫn cài đặt nhanh cho khách hàng
 
-### Yêu cầu hệ thống (Prerequisites)
-- [Node.js](https://nodejs.org/) (Khuyến nghị bản v18 trở lên)
-- [PostgreSQL](https://www.postgresql.org/) (Cài đặt cục bộ hoặc dùng Docker/Cloud)
+Cách khuyến nghị là chạy bằng **Docker Compose**. Khách hàng không cần cài Node.js hoặc PostgreSQL trực tiếp trên máy; Docker sẽ tự chạy Frontend, Backend và Database.
 
-### 1. Cài đặt Backend
-Di chuyển vào thư mục `backend/` và cài đặt các thư viện:
+### 1. Yêu cầu trước khi chạy
+
+Cài đặt các công cụ sau:
+- [Git](https://git-scm.com/downloads)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+Đảm bảo Docker Desktop đang mở trước khi chạy lệnh. Các cổng mặc định cần trống:
+- Frontend: `3000`
+- Backend: `3001`
+- PostgreSQL: `5432`
+
+### 2. Clone source code
+
 ```bash
-cd backend
-npm install
+git clone <repository-url>
+cd vietdine-itssjp1
 ```
 
-Tạo file `.env` ở thư mục `backend/` với nội dung tham khảo:
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/vietdine"
-SESSION_SECRET="your_secret_key"
-FRONTEND_URL="http://localhost:3000"
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
+Thay `<repository-url>` bằng link GitHub/GitLab của project.
+
+### 3. Tạo file cấu hình môi trường
+
+Trên Windows PowerShell:
+
+```powershell
+copy .env.example .env
 ```
 
-Khởi tạo Database và nạp dữ liệu mẫu (Seeding):
-```bash
-npx prisma db push
-npm run seed
-```
-
-Chạy Server Backend (Mặc định ở cổng `3001`):
-```bash
-npm run dev
-```
-
-### 2. Cài đặt Frontend
-Di chuyển vào thư mục `frontend/` và cài đặt các thư viện:
-```bash
-cd frontend
-npm install
-```
-
-Tạo file `.env` ở thư mục `frontend/` với nội dung:
-```env
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-```
-
-Chạy Server Frontend (Mặc định ở cổng `3000`):
-```bash
-npm run dev
-```
-
-Bây giờ bạn có thể truy cập vào `http://localhost:3000` để trải nghiệm hệ thống!
-
----
-
-## 🐳 Chạy bằng Docker Compose
-
-Cách này phù hợp khi gửi project cho người khác chạy thử mà không cần cài Node.js/PostgreSQL trực tiếp trên máy.
-
-### 1. Tạo file môi trường
+Trên macOS/Linux/Git Bash:
 
 ```bash
 cp .env.example .env
 ```
 
-Nếu không dùng Google OAuth thì có thể để trống các biến `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+File `.env.example` đã có cấu hình mặc định để chạy thử local:
 
-### 2. Build và chạy toàn bộ hệ thống
+```env
+POSTGRES_DB=vietdine
+POSTGRES_USER=vietdine
+POSTGRES_PASSWORD=vietdine_password
+POSTGRES_PORT=5432
+
+FRONTEND_PORT=3000
+BACKEND_PORT=3001
+FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3001
+SERVER_API_URL=http://backend:3001
+INTERNAL_API_URL=http://backend:3001
+
+SESSION_SECRET=change_me_for_shared_demo
+RUN_SEED=true
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+```
+
+Nếu chỉ chạy demo và không dùng đăng nhập Google, có thể để trống các biến `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+
+### 4. Chạy toàn bộ hệ thống
 
 ```bash
 docker compose up --build
 ```
 
-Docker Compose sẽ chạy:
+Lần đầu chạy có thể mất vài phút vì Docker cần tải image, cài thư viện và build project.
+
+Khi chạy thành công, truy cập:
+
+```text
+http://localhost:3000
+```
+
+Docker Compose sẽ tự chạy:
 - `db`: PostgreSQL 16
-- `backend`: Express API ở `http://localhost:3001`
-- `frontend`: Next.js ở `http://localhost:3000`
+- `backend`: Express API tại `http://localhost:3001`
+- `frontend`: Next.js tại `http://localhost:3000`
 
-Khi backend start, container sẽ tự chạy `prisma db push` để tạo schema. Mặc định `RUN_SEED=true`, nên dữ liệu demo sẽ được nạp vào database. File seed hiện tại chạy theo chế độ non-destructive, không xóa toàn bộ dữ liệu cũ nếu không đặt `RESET_DB=true`.
+Backend sẽ tự chạy `prisma db push` để tạo schema database. Mặc định `RUN_SEED=true`, nên dữ liệu demo sẽ được nạp tự động.
 
-### 3. Lệnh hữu ích
+### 5. Dừng hệ thống
+
+Nhấn `Ctrl + C` ở terminal đang chạy Docker, sau đó chạy:
 
 ```bash
 docker compose down
-docker compose up --build
-docker compose logs -f backend
-docker compose logs -f frontend
 ```
 
-Nếu muốn xóa sạch database Docker và seed lại từ đầu:
+### 6. Chạy lại sau này
+
+```bash
+docker compose up
+```
+
+Nếu có thay đổi source code hoặc muốn build lại:
+
+```bash
+docker compose up --build
+```
+
+### 7. Xóa sạch database và seed lại từ đầu
+
+Lệnh này sẽ xóa toàn bộ dữ liệu PostgreSQL đang nằm trong Docker volume:
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
+
+### 8. Xem log khi cần kiểm tra lỗi
+
+```bash
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+### Lỗi thường gặp
+
+Nếu `http://localhost:3000` không mở được, hãy kiểm tra Docker Desktop đang chạy và terminal chưa báo lỗi.
+
+Nếu báo trùng port `3000`, `3001` hoặc `5432`, hãy tắt ứng dụng đang dùng port đó hoặc đổi `FRONTEND_PORT`, `BACKEND_PORT`, `POSTGRES_PORT` trong file `.env`.
+
+Nếu muốn làm mới dữ liệu demo, chạy lại bằng lệnh:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+---
+
+## 🧑‍💻 Chạy local cho developer
+
+Cách này dùng khi cần phát triển code trực tiếp, không phải cách khuyến nghị cho khách hàng chạy demo.
+
+### Yêu cầu hệ thống
+
+- [Node.js](https://nodejs.org/) bản 20 trở lên
+- [PostgreSQL](https://www.postgresql.org/) cài local hoặc dùng database cloud
+
+### 1. Cài dependency
+
+Chạy ở thư mục gốc project:
+
+```bash
+npm install
+```
+
+### 2. Cấu hình Backend
+
+Tạo file `backend/.env`:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/vietdine"
+SESSION_SECRET="your_secret_key"
+FRONTEND_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+```
+
+Khởi tạo database và nạp dữ liệu mẫu:
+
+```bash
+cd backend
+npx prisma db push
+npm run seed
+npm run dev
+```
+
+Backend mặc định chạy tại `http://localhost:3001`.
+
+### 3. Cấu hình Frontend
+
+Mở terminal khác, tạo file `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+```
+
+Chạy frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend mặc định chạy tại `http://localhost:3000`.
 
 ---
 

@@ -7,15 +7,23 @@ import { useLanguage } from '@/context/LanguageContext';
 
 interface Promotion {
   id: number;
+  menuId: number | null;
   title: string;
   description: string | null;
   discountPercent: number;
   startDate: string;
   endDate: string;
   isActive: boolean;
+  menu: {
+    id: number;
+    dishNameVn: string;
+    dishNameJp: string;
+    price: number | null;
+  } | null;
 }
 
 interface PromotionFormData {
+  menuId: number | null;
   title: string;
   description: string;
   discountPercent: number;
@@ -24,8 +32,16 @@ interface PromotionFormData {
   isActive: boolean;
 }
 
+interface MenuOption {
+  id: number;
+  dishNameVn: string;
+  dishNameJp: string;
+  price: number | null;
+}
+
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [menus, setMenus] = useState<MenuOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Promotion | null>(null);
@@ -35,11 +51,12 @@ export default function PromotionsPage() {
 
   useEffect(() => {
     fetchPromotions();
+    fetchMenus();
   }, []);
 
   async function fetchPromotions() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions`, {
+      const res = await fetch('/api/owner/promotions', {
         credentials: 'include',
       });
       if (res.ok) {
@@ -57,8 +74,8 @@ export default function PromotionsPage() {
     setIsSubmitting(true);
     try {
       const url = editItem
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions/${editItem.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions`;
+        ? `/api/owner/promotions/${editItem.id}`
+        : '/api/owner/promotions';
 
       const res = await fetch(url, {
         method: editItem ? 'PUT' : 'POST',
@@ -82,7 +99,7 @@ export default function PromotionsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/promotions/${deleteId}`, {
+      const res = await fetch(`/api/owner/promotions/${deleteId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -96,7 +113,7 @@ export default function PromotionsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ja-JP', {
+    return new Date(dateStr).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -107,6 +124,20 @@ export default function PromotionsPage() {
     const now = new Date();
     return promo.isActive && new Date(promo.startDate) <= now && new Date(promo.endDate) >= now;
   };
+
+  async function fetchMenus() {
+    try {
+      const res = await fetch('/api/owner/menu', {
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMenus(data.menus);
+      }
+    } catch (err) {
+      console.error('Menu fetch error:', err);
+    }
+  }
   const cycleLocale = () => setLocale(locale === 'ja' ? 'vi' : locale === 'vi' ? 'en' : 'ja');
 
   return (
@@ -165,6 +196,15 @@ export default function PromotionsPage() {
                     <p className="promo-card-desc">{promo.description}</p>
                   )}
 
+                  <div className="promo-menu-target">
+                    <span className="material-symbols-outlined">restaurant_menu</span>
+                    <span>
+                      {promo.menu
+                        ? `${promo.menu.dishNameVn} / ${promo.menu.dishNameJp}`
+                        : t.promo_form_menu_all}
+                    </span>
+                  </div>
+
                   <div className="promo-card-meta">
                     <span className="promo-dates">
                       <span className="material-symbols-outlined">schedule</span>
@@ -203,6 +243,7 @@ export default function PromotionsPage() {
         <PromotionForm
           initialData={editItem ? {
             id: editItem.id,
+            menuId: editItem.menuId ?? null,
             title: editItem.title,
             description: editItem.description || '',
             discountPercent: editItem.discountPercent,
@@ -213,6 +254,7 @@ export default function PromotionsPage() {
           onSubmit={handleSubmit}
           onCancel={() => { setShowForm(false); setEditItem(null); }}
           isSubmitting={isSubmitting}
+          menus={menus}
         />
       )}
 

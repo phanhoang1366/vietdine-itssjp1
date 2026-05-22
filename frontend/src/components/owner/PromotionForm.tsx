@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 
 interface PromotionData {
   id?: number;
+  menuId: number | null;
   title: string;
   description: string;
   discountPercent: number;
@@ -13,15 +14,24 @@ interface PromotionData {
   isActive: boolean;
 }
 
+interface MenuOption {
+  id: number;
+  dishNameVn: string;
+  dishNameJp: string;
+  price: number | null;
+}
+
 interface PromotionFormProps {
   initialData?: PromotionData;
   onSubmit: (data: Omit<PromotionData, 'id'>) => Promise<void>;
   onCancel: () => void;
   isSubmitting?: boolean;
+  menus: MenuOption[];
 }
 
-export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmitting }: PromotionFormProps) {
+export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmitting, menus }: PromotionFormProps) {
   const [formData, setFormData] = useState<Omit<PromotionData, 'id'>>({
+    menuId: null,
     title: '',
     description: '',
     discountPercent: 10,
@@ -34,6 +44,7 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
   useEffect(() => {
     if (initialData) {
       setFormData({
+        menuId: initialData.menuId ?? null,
         title: initialData.title,
         description: initialData.description || '',
         discountPercent: initialData.discountPercent,
@@ -69,6 +80,25 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
               placeholder={t.promo_placeholder_title}
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label>{t.promo_form_menu_label}</label>
+            <select
+              value={formData.menuId ?? ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                menuId: e.target.value ? Number(e.target.value) : null,
+              })}
+              className="form-select"
+            >
+              <option value="">{t.promo_form_menu_all}</option>
+              {menus.map((menu) => (
+                <option key={menu.id} value={menu.id}>
+                  {menu.dishNameVn} / {menu.dishNameJp}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-group">

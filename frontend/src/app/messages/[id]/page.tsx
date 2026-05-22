@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useState, useRef, use } from 'react';
+import { useCallback, useEffect, useRef, useState, use } from 'react';
 import Link from 'next/link';
 import NavHeader from '@/components/NavHeader';
 import { useSocket } from '@/context/SocketContext';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import '../bookings.css';
+import '@/app/bookings/bookings.css';
 
 interface Message {
   id: number;
-  reservationId: number;
+  reservationId: number | null;
+  conversationId: number | null;
   senderId: number;
   messageContent: string;
   sentAt: string;
@@ -24,37 +25,35 @@ interface Message {
   };
 }
 
-interface ReservationDetail {
+interface DirectConversation {
   id: number;
-  revDatetime: string;
-  guestCount: number;
-  status: string;
+  userId: number;
   restaurant: {
     id: number;
     name: string;
     imageUrl: string | null;
     address: string;
-    ownerId: number;
-  };
-  user: {
-    id: number;
-    fullName: string;
-    avatarUrl: string | null;
+    owner: {
+      id: number;
+      fullName: string;
+      avatarUrl: string | null;
+      emailPhone: string;
+    };
   };
 }
 
-export default function BookingChatPage({ params }: { params: Promise<{ id: string }> }) {
+export default function DirectMessagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const reservationId = parseInt(id);
+  const conversationId = parseInt(id, 10);
   const { socket } = useSocket();
   const { user } = useAuth();
+  const { t, locale } = useLanguage();
 
-  const [reservation, setReservation] = useState<ReservationDetail | null>(null);
+  const [conversation, setConversation] = useState<DirectConversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState('');
-  const { t, locale } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -67,64 +66,55 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     );
   }, []);
 
-  // Fetch reservation and messages
   useEffect(() => {
-    if (isNaN(reservationId)) return;
+    if (Number.isNaN(conversationId)) return;
 
     async function fetchData() {
       try {
-        const [resRes, msgRes] = await Promise.all([
-          fetch(`/api/bookings/${reservationId}`, {
-            credentials: 'include',
-          }),
-          fetch(`/api/chat/${reservationId}/messages`, {
-            credentials: 'include',
-          }),
+        const [conversationRes, messagesRes] = await Promise.all([
+          fetch(`/api/chat/direct/${conversationId}`, { credentials: 'include' }),
+          fetch(`/api/chat/direct/${conversationId}/messages`, { credentials: 'include' }),
         ]);
 
-        if (resRes.ok) {
-          const resData = await resRes.json();
-          setReservation(resData.reservation);
+        if (conversationRes.ok) {
+          const data = await conversationRes.json();
+          setConversation(data.conversation);
         }
 
-        if (msgRes.ok) {
-          const msgData = await msgRes.json();
-          setMessages(msgData.messages);
+        if (messagesRes.ok) {
+          const data = await messagesRes.json();
+          setMessages(data.messages);
         }
-      } catch (err) {
-        console.error('Fetch error:', err);
+      } catch (error) {
+        console.error('Direct chat fetch error:', error);
       } finally {
         setIsLoading(false);
       }
-    };
+    }
 
     fetchData();
 
-    // Mark messages as read
-    fetch(`/api/chat/${reservationId}/read`, {
+    fetch(`/api/chat/direct/${conversationId}/read`, {
       method: 'PUT',
       credentials: 'include',
     }).catch(() => {});
-  }, [reservationId]);
+  }, [conversationId]);
 
-  // Socket.IO events
   useEffect(() => {
-    if (!socket || isNaN(reservationId)) return;
+    if (!socket || Number.isNaN(conversationId)) return;
 
-    socket.emit('join_reservation', reservationId);
+    socket.emit('join_direct_conversation', conversationId);
 
     const handleNewMessage = (message: Message) => {
-      if (message.reservationId !== reservationId) return;
-      setMessages((prev) => [...prev, message]);
-
-      // Mark as read if it's from the other party
+      if (message.conversationId !== conversationId) return;
+      setMessages((current) => [...current, message]);
       if (message.senderId !== user?.id) {
-        socket.emit('mark_read', reservationId);
+        socket.emit('mark_direct_read', conversationId);
       }
     };
 
     const handleMessageUpdated = (message: Message) => {
-      if (message.reservationId !== reservationId) return;
+      if (message.conversationId !== conversationId) return;
       updateMessageInState(message);
     };
 
@@ -134,70 +124,21 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
       }
     };
 
-    socket.on('new_message', handleNewMessage);
+    socket.on('new_direct_message', handleNewMessage);
     socket.on('message_updated', handleMessageUpdated);
     socket.on('user_typing', handleTyping);
 
     return () => {
-      socket.emit('leave_reservation', reservationId);
-      socket.off('new_message', handleNewMessage);
+      socket.emit('leave_direct_conversation', conversationId);
+      socket.off('new_direct_message', handleNewMessage);
       socket.off('message_updated', handleMessageUpdated);
       socket.off('user_typing', handleTyping);
     };
-  }, [socket, reservationId, updateMessageInState, user?.id]);
+  }, [socket, conversationId, updateMessageInState, user?.id]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Handle typing indicator
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-
-    if (socket) {
-      socket.emit('typing', { reservationId, isTyping: true });
-
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('typing', { reservationId, isTyping: false });
-      }, 2000);
-    }
-  };
-
-  // Send message
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const content = newMessage.trim();
-    if (!content) return;
-
-    setNewMessage('');
-
-    // Stop typing indicator
-    if (socket) {
-      socket.emit('typing', { reservationId, isTyping: false });
-    }
-
-    // Send via Socket.IO (preferred) or REST fallback
-    if (socket?.connected) {
-      socket.emit('send_message', { reservationId, content });
-    } else {
-      try {
-        await fetch(`/api/chat/${reservationId}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ content }),
-        });
-      } catch (err) {
-        console.error('Send message error:', err);
-      }
-    }
-  };
 
   const formatTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleTimeString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US', {
@@ -211,6 +152,50 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+
+    if (socket) {
+      socket.emit('direct_typing', { conversationId, isTyping: true });
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('direct_typing', { conversationId, isTyping: false });
+      }, 2000);
+    }
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const content = newMessage.trim();
+    if (!content) return;
+
+    setNewMessage('');
+    socket?.emit('direct_typing', { conversationId, isTyping: false });
+
+    if (socket?.connected) {
+      socket.emit('send_direct_message', { conversationId, content });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/chat/direct/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setMessages((current) => [...current, data.message]);
+      }
+    } catch (error) {
+      console.error('Direct send error:', error);
+    }
   };
 
   const startEdit = (message: Message) => {
@@ -262,6 +247,8 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  let lastDate = '';
+
   if (isLoading) {
     return (
       <div className="chat-page">
@@ -274,44 +261,33 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  if (!reservation) {
+  if (!conversation) {
     return (
       <div className="chat-page">
         <NavHeader />
         <div className="bookings-empty">
           <span className="material-symbols-outlined">error_outline</span>
           <h3>{t.bookings_not_found}</h3>
-          <Link href="/bookings">{t.bookings_back_to_list}</Link>
+          <Link href="/">{t.nav_home}</Link>
         </div>
       </div>
     );
   }
 
-  // Group messages by date
-  let lastDate = '';
-
   return (
     <div className="chat-page">
       <NavHeader />
       <div className="chat-container">
-        {/* Header */}
         <div className="chat-header-bar">
-          <Link href="/bookings" className="chat-back-btn">
+          <Link href={`/restaurant/${conversation.restaurant.id}`} className="chat-back-btn">
             <span className="material-symbols-outlined">arrow_back</span>
           </Link>
           <div className="chat-header-info">
-            <h2>{reservation.restaurant.name}</h2>
-            <p>
-              {new Date(reservation.revDatetime).toLocaleDateString(locale === 'ja' ? 'ja-JP' : locale === 'vi' ? 'vi-VN' : 'en-US')} ・
-              {t.owner_res_guests_label.replace('{count}', reservation.guestCount.toString())} ・
-              <span className={`booking-status ${reservation.status === 'Confirmed' ? 'confirmed' : reservation.status === 'Waiting' ? 'waiting' : 'cancelled'}`} style={{ marginLeft: '4px', display: 'inline', padding: '2px 8px', fontSize: '0.72rem' }}>
-                {reservation.status === 'Confirmed' ? t.owner_res_status_confirmed : reservation.status === 'Waiting' ? t.bookings_wait_confirmation : t.owner_res_status_cancelled}
-              </span>
-            </p>
+            <h2>{conversation.restaurant.name}</h2>
+            <p>{conversation.restaurant.owner.fullName} ・ {conversation.restaurant.owner.emailPhone}</p>
           </div>
         </div>
 
-        {/* Messages */}
         <div className="chat-messages">
           {messages.length === 0 ? (
             <div className="chat-empty">
@@ -323,33 +299,27 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
           ) : (
-            messages.map((msg) => {
-              const msgDate = formatDate(msg.sentAt);
-              let showDate = false;
-              if (msgDate !== lastDate) {
-                showDate = true;
-                lastDate = msgDate;
-              }
-
-              const isSent = msg.senderId === user?.id;
+            messages.map((message) => {
+              const msgDate = formatDate(message.sentAt);
+              const showDate = msgDate !== lastDate;
+              lastDate = msgDate;
+              const isSent = message.senderId === user?.id;
 
               return (
-                <div key={msg.id}>
-                  {showDate && (
-                    <div className="chat-date-divider">{msgDate}</div>
-                  )}
+                <div key={message.id}>
+                  {showDate && <div className="chat-date-divider">{msgDate}</div>}
                   <div className={`chat-bubble-wrapper ${isSent ? 'sent' : 'received'}`}>
                     <div className="chat-bubble">
-                      {msg.isRetracted ? (
+                      {message.isRetracted ? (
                         <div className="chat-retracted">{t.chat_retracted}</div>
-                      ) : editingId === msg.id ? (
+                      ) : editingId === message.id ? (
                         <div className="chat-edit-box">
                           <input
                             value={editingContent}
                             onChange={(event) => setEditingContent(event.target.value)}
                           />
                           <div className="chat-message-actions">
-                            <button type="button" onClick={() => submitEdit(msg.id)}>
+                            <button type="button" onClick={() => submitEdit(message.id)}>
                               {t.chat_save_edit}
                             </button>
                             <button type="button" onClick={() => setEditingId(null)}>
@@ -358,18 +328,18 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
                           </div>
                         </div>
                       ) : (
-                        <div>{msg.messageContent}</div>
+                        <div>{message.messageContent}</div>
                       )}
-                      <div className="chat-bubble-time">{formatTime(msg.sentAt)}</div>
-                      {msg.editedAt && !msg.isRetracted && (
-                        <div className="chat-edited-label">{t.chat_edited}</div>
-                      )}
-                      {isSent && !msg.isRetracted && editingId !== msg.id && (
+                      <div className="chat-bubble-time">
+                        {formatTime(message.sentAt)}
+                        {message.editedAt && !message.isRetracted ? ` ・ ${t.chat_edited}` : ''}
+                      </div>
+                      {isSent && !message.isRetracted && editingId !== message.id && (
                         <div className="chat-message-actions">
-                          <button type="button" onClick={() => startEdit(msg)}>
+                          <button type="button" onClick={() => startEdit(message)}>
                             {t.chat_edit}
                           </button>
-                          <button type="button" onClick={() => retractMessage(msg.id)}>
+                          <button type="button" onClick={() => retractMessage(message.id)}>
                             {t.chat_retract}
                           </button>
                         </div>
@@ -393,25 +363,18 @@ export default function BookingChatPage({ params }: { params: Promise<{ id: stri
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        {reservation.status !== 'Cancelled' && (
-          <form className="chat-input-bar" onSubmit={sendMessage}>
-            <input
-              type="text"
-              className="chat-input"
-              placeholder={t.owner_chat_input_placeholder}
-              value={newMessage}
-              onChange={handleInputChange}
-            />
-            <button
-              type="submit"
-              className="chat-send-btn"
-              disabled={!newMessage.trim()}
-            >
-              <span className="material-symbols-outlined">send</span>
-            </button>
-          </form>
-        )}
+        <form className="chat-input-bar" onSubmit={sendMessage}>
+          <input
+            type="text"
+            className="chat-input"
+            placeholder={t.owner_chat_input_placeholder}
+            value={newMessage}
+            onChange={handleInputChange}
+          />
+          <button type="submit" className="chat-send-btn" disabled={!newMessage.trim()}>
+            <span className="material-symbols-outlined">send</span>
+          </button>
+        </form>
       </div>
     </div>
   );

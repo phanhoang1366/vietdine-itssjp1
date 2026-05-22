@@ -95,6 +95,22 @@ export async function verifyGoogleToken(token: string) {
   return { success: true, user: data.user };
 }
 
+export async function verifyFacebookToken(token: string) {
+  const res = await fetch(`${API_URL}/auth/facebook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    return { success: false, message: data.message || 'Facebook Login Failed' };
+  }
+
+  await forwardSessionCookie(res);
+  return { success: true, user: data.user };
+}
+
 export async function signup(state: FormState, formData: FormData): Promise<FormState> {
   const res = await fetch(`${API_URL}/users/register`, {
     method: 'POST',

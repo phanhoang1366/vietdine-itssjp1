@@ -44,6 +44,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshUser();
+      }
+    };
+
+    window.addEventListener('focus', refreshUser);
+    window.addEventListener('pageshow', refreshUser);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.removeEventListener('focus', refreshUser);
+      window.removeEventListener('pageshow', refreshUser);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshUser]);
+
   return (
     <AuthContext.Provider
       value={{

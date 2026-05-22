@@ -2,6 +2,13 @@ import prisma from '../db/prisma';
 import type { RoleId } from '../lib/definitions';
 import { User } from '@prisma/client';
 
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super('Email này đã được đăng ký rồi');
+    this.name = 'EmailAlreadyRegisteredError';
+  }
+}
+
 // ─── Helper: strip password from user ─────────────────────────
 export function toSafeUser(user: User) {
   const { passwordHash, ...safeUser } = user;
@@ -99,25 +106,20 @@ export async function findOrCreateGoogleUser(data: {
   avatarUrl?: string;
 }) {
   return await prisma.$transaction(async (tx: any) => {
-    // Attempt to find user by email or googleId
-    let user = await tx.user.findFirst({
-      where: {
-        OR: [
-          { emailPhone: data.email },
-          { googleId: data.googleId }
-        ]
-      }
+    const googleUser = await tx.user.findUnique({
+      where: { googleId: data.googleId },
     });
 
-    if (user) {
-      // Update googleId if it's missing but email matched
-      if (!user.googleId) {
-        user = await tx.user.update({
-          where: { id: user.id },
-          data: { googleId: data.googleId }
-        });
-      }
-      return user;
+    if (googleUser) {
+      return googleUser;
+    }
+
+    const emailUser = await tx.user.findUnique({
+      where: { emailPhone: data.email },
+    });
+
+    if (emailUser) {
+      throw new EmailAlreadyRegisteredError();
     }
 
     // Ensure Customer Role exists (Role ID 1)
@@ -131,11 +133,57 @@ export async function findOrCreateGoogleUser(data: {
     });
 
     // Create new Google User (no password required)
-    user = await tx.user.create({
+    const user = await tx.user.create({
       data: {
         fullName: data.name,
         emailPhone: data.email,
         googleId: data.googleId,
+        avatarUrl: data.avatarUrl,
+        roleId: role.id,
+      },
+    });
+
+    return user;
+  });
+}
+
+export async function findOrCreateFacebookUser(data: {
+  email: string;
+  name: string;
+  facebookId: string;
+  avatarUrl?: string;
+}) {
+  return await prisma.$transaction(async (tx: any) => {
+    const facebookUser = await tx.user.findUnique({
+      where: { facebookId: data.facebookId },
+    });
+
+    if (facebookUser) {
+      return facebookUser;
+    }
+
+    const emailUser = await tx.user.findUnique({
+      where: { emailPhone: data.email },
+    });
+
+    if (emailUser) {
+      throw new EmailAlreadyRegisteredError();
+    }
+
+    const role = await tx.role.upsert({
+      where: { id: 1 },
+      update: {},
+      create: {
+        id: 1,
+        name: 'Customer',
+      },
+    });
+
+    const user = await tx.user.create({
+      data: {
+        fullName: data.name,
+        emailPhone: data.email,
+        facebookId: data.facebookId,
         avatarUrl: data.avatarUrl,
         roleId: role.id,
       },
