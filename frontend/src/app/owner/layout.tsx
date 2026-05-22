@@ -29,8 +29,11 @@ export default async function OwnerLayout({
 }) {
   const user = await getUser();
   
-  // Redirect non-owners away
-  if (!user || user.roleId !== 2) {
+  if (!user) {
+    redirect('/owner/login');
+  }
+
+  if (user.roleId !== 2) {
     redirect('/');
   }
 

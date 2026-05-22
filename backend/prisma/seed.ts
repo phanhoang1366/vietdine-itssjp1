@@ -1105,6 +1105,7 @@ async function main() {
 
   if (shouldResetDb) {
     await prisma.chatMessage.deleteMany();
+    await prisma.directConversation.deleteMany();
     await prisma.reservation.deleteMany();
     await prisma.savedRestaurant.deleteMany();
     await prisma.searchHistory.deleteMany();
@@ -1359,10 +1360,20 @@ async function main() {
   // ─── Promotions ─────────────────────────────────────────────
   const now = new Date();
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const promotionMenus = await prisma.menu.findMany({
+    where: { restaurantId: { in: restaurants.slice(0, 3).map((restaurant) => restaurant.id) } },
+    orderBy: { id: 'asc' },
+  });
+  const firstMenuByRestaurant = new Map<number, number>();
+  promotionMenus.forEach((menu) => {
+    if (!firstMenuByRestaurant.has(menu.restaurantId)) {
+      firstMenuByRestaurant.set(menu.restaurantId, menu.id);
+    }
+  });
   const promotionData = [
-    { restaurantId: restaurants[0].id, title: 'ランチタイム割引', description: '11:00-14:00のご注文で10%OFF', discountPercent: 10, startDate: now, endDate: nextMonth, isActive: true },
-    { restaurantId: restaurants[1].id, title: 'オバマセット特別価格', description: 'ブンチャーオバマセットが20%OFF', discountPercent: 20, startDate: now, endDate: nextMonth, isActive: true },
-    { restaurantId: restaurants[2].id, title: 'ディナーコース割引', description: '4名様以上で15%OFF', discountPercent: 15, startDate: now, endDate: nextMonth, isActive: true },
+    { restaurantId: restaurants[0].id, menuId: firstMenuByRestaurant.get(restaurants[0].id) ?? null, title: 'ランチタイム割引', description: '11:00-14:00のご注文で10%OFF', discountPercent: 10, startDate: now, endDate: nextMonth, isActive: true },
+    { restaurantId: restaurants[1].id, menuId: firstMenuByRestaurant.get(restaurants[1].id) ?? null, title: 'オバマセット特別価格', description: 'ブンチャーオバマセットが20%OFF', discountPercent: 20, startDate: now, endDate: nextMonth, isActive: true },
+    { restaurantId: restaurants[2].id, menuId: firstMenuByRestaurant.get(restaurants[2].id) ?? null, title: 'ディナーコース割引', description: '4名様以上で15%OFF', discountPercent: 15, startDate: now, endDate: nextMonth, isActive: true },
   ];
 
   await prisma.promotion.deleteMany({

@@ -37,7 +37,7 @@ export default function MenuManagement() {
 
   async function fetchMenus() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu`, {
+      const res = await fetch('/api/owner/menu', {
         credentials: 'include',
       });
       if (res.ok) {
@@ -55,8 +55,8 @@ export default function MenuManagement() {
     setIsSubmitting(true);
     try {
       const url = editItem
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu/${editItem.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu`;
+        ? `/api/owner/menu/${editItem.id}`
+        : '/api/owner/menu';
 
       const res = await fetch(url, {
         method: editItem ? 'PUT' : 'POST',
@@ -80,7 +80,7 @@ export default function MenuManagement() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/menu/${deleteId}`, {
+      const res = await fetch(`/api/owner/menu/${deleteId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

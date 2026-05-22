@@ -1,17 +1,83 @@
 'use client';
 
 import { useGoogleLogin } from '@react-oauth/google';
-import { verifyGoogleToken } from '@/actions/auth';
+import { verifyFacebookToken, verifyGoogleToken } from '@/actions/auth';
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 
+type SocialProvider = 'google' | 'facebook';
+
+type FacebookLoginResponse = {
+  status?: string;
+  authResponse?: {
+    accessToken?: string;
+  };
+};
+
+type FacebookSdk = {
+  init: (options: {
+    appId: string;
+    cookie: boolean;
+    xfbml: boolean;
+    version: string;
+  }) => void;
+  login: (
+    callback: (response: FacebookLoginResponse) => void,
+    options: { scope: string }
+  ) => void;
+};
+
+declare global {
+  interface Window {
+    FB?: FacebookSdk;
+    fbAsyncInit?: () => void;
+  }
+}
+
+function loadFacebookSdk(appId: string) {
+  return new Promise<FacebookSdk>((resolve, reject) => {
+    if (window.FB) {
+      resolve(window.FB);
+      return;
+    }
+
+    window.fbAsyncInit = () => {
+      window.FB?.init({
+        appId,
+        cookie: true,
+        xfbml: false,
+        version: 'v20.0',
+      });
+
+      if (window.FB) {
+        resolve(window.FB);
+      } else {
+        reject(new Error('Facebook SDK unavailable'));
+      }
+    };
+
+    if (document.getElementById('facebook-jssdk')) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'facebook-jssdk';
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = 'anonymous';
+    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    script.onerror = () => reject(new Error('Facebook SDK failed to load'));
+    document.body.appendChild(script);
+  });
+}
+
 export default function SocialLoginButtons() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<SocialProvider | null>(null);
   const { t } = useLanguage();
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      setLoading(true);
+      setLoading('google');
       try {
         const res = await verifyGoogleToken(tokenResponse.access_token);
         if (res.success) {
@@ -22,7 +88,7 @@ export default function SocialLoginButtons() {
       } catch {
         alert(t.auth_google_err);
       } finally {
-        setLoading(false);
+        setLoading(null);
       }
     },
     onError: () => {
@@ -30,11 +96,43 @@ export default function SocialLoginButtons() {
     },
   });
 
-  const handleSocial = (provider: string) => {
-    if (provider === 'Google') {
-      googleLogin();
-    } else {
-      alert(t.auth_provider_soon.replace('{provider}', provider));
+  const handleFacebookLogin = async () => {
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+    if (!appId) {
+      alert(t.auth_facebook_config_missing);
+      return;
+    }
+
+    setLoading('facebook');
+    try {
+      const facebook = await loadFacebookSdk(appId);
+      facebook.login(
+        async (response) => {
+          const token = response.authResponse?.accessToken;
+          if (!token) {
+            alert(t.auth_facebook_fail);
+            setLoading(null);
+            return;
+          }
+
+          try {
+            const res = await verifyFacebookToken(token);
+            if (res.success) {
+              window.location.href = res.user.roleId === 2 ? '/owner' : '/';
+            } else {
+              alert(res.message);
+            }
+          } catch {
+            alert(t.auth_facebook_err);
+          } finally {
+            setLoading(null);
+          }
+        },
+        { scope: 'email,public_profile' }
+      );
+    } catch {
+      alert(t.auth_facebook_err);
+      setLoading(null);
     }
   };
 
@@ -56,8 +154,8 @@ export default function SocialLoginButtons() {
       <div className="grid grid-cols-2 gap-4">
         <button
           type="button"
-          onClick={() => handleSocial('Google')}
-          disabled={loading}
+          onClick={() => googleLogin()}
+          disabled={loading !== null}
           className="flex items-center justify-center gap-3 py-3.5 px-4 bg-[#f8f6f4] border border-[#f0ede8] rounded-xl hover:bg-[#f0ede8] transition-colors active:scale-95 disabled:opacity-50"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -84,8 +182,9 @@ export default function SocialLoginButtons() {
         </button>
         <button
           type="button"
-          onClick={() => handleSocial('Facebook')}
-          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-[#f8f6f4] border border-[#f0ede8] rounded-xl hover:bg-[#f0ede8] transition-colors active:scale-95"
+          onClick={handleFacebookLogin}
+          disabled={loading !== null}
+          className="flex items-center justify-center gap-3 py-3.5 px-4 bg-[#f8f6f4] border border-[#f0ede8] rounded-xl hover:bg-[#f0ede8] transition-colors active:scale-95 disabled:opacity-50"
         >
           <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />

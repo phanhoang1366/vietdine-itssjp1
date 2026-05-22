@@ -1,6 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { LoginFormSchema } from '../lib/definitions';
-import { findUserByEmail, findOrCreateGoogleUser, findUserById, toSafeUser } from '../services/user.service';
+import {
+  EmailAlreadyRegisteredError,
+  findUserByEmail,
+  findOrCreateGoogleUser,
+  findOrCreateFacebookUser,
+  findUserById,
+  toSafeUser,
+} from '../services/user.service';
 import { createSessionCookie, clearSessionCookie, decrypt } from '../lib/session';
 import { compareSync } from 'bcryptjs';
 
@@ -98,7 +105,58 @@ router.post('/google', async (req: Request, res: Response) => {
       user: { id: user.id, name: user.fullName, email: user.emailPhone, roleId: user.roleId },
     });
   } catch (error) {
+    if (error instanceof EmailAlreadyRegisteredError) {
+      return res.status(409).json({ message: error.message });
+    }
+
     console.error('Google Auth Error:', error);
+    res.status(401).json({ message: 'Authentication failed' });
+  }
+});
+
+// POST /api/auth/facebook
+router.post('/facebook', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const params = new URLSearchParams({
+      fields: 'id,name,email,picture.type(large)',
+      access_token: token,
+    });
+    const userInfoRes = await fetch(`https://graph.facebook.com/v20.0/me?${params.toString()}`);
+
+    if (!userInfoRes.ok) {
+      return res.status(400).json({ message: 'Invalid Facebook Token' });
+    }
+
+    const payload = await userInfoRes.json();
+
+    if (!payload?.id || !payload?.email) {
+      return res.status(400).json({ message: 'Facebook account must provide an email address' });
+    }
+
+    const user = await findOrCreateFacebookUser({
+      email: payload.email,
+      name: payload.name || 'Facebook User',
+      facebookId: payload.id,
+      avatarUrl: payload.picture?.data?.url,
+    });
+
+    await createSessionCookie(res, user.id, user.roleId as 1 | 2 | 3);
+
+    res.json({
+      message: 'Facebook Login successful',
+      user: { id: user.id, name: user.fullName, email: user.emailPhone, roleId: user.roleId },
+    });
+  } catch (error) {
+    if (error instanceof EmailAlreadyRegisteredError) {
+      return res.status(409).json({ message: error.message });
+    }
+
+    console.error('Facebook Auth Error:', error);
     res.status(401).json({ message: 'Authentication failed' });
   }
 });

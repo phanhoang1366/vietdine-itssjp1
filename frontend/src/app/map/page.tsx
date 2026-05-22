@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, User, Home, Map as MapIcon, Heart, Calendar, Settings, MapPin, Star, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
@@ -48,6 +48,155 @@ export function MapPageContent() {
   const { isAuthenticated } = useAuth();
   
   const carouselRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const activePointerId = useRef<number | null>(null);
+  const dragStartX = useRef(0);
+  const scrollStartX = useRef(0);
+  const lastDragX = useRef(0);
+  const lastDragTime = useRef(0);
+  const dragVelocity = useRef(0);
+  const pendingScrollLeft = useRef(0);
+  const dragFrame = useRef<number | null>(null);
+  const momentumFrame = useRef<number | null>(null);
+  const momentumTime = useRef(0);
+  const hasDragged = useRef(false);
+
+  const stopMomentum = useCallback(() => {
+    if (momentumFrame.current !== null) {
+      cancelAnimationFrame(momentumFrame.current);
+      momentumFrame.current = null;
+    }
+  }, []);
+
+  const setDraggingStyle = useCallback((enabled: boolean) => {
+    carouselRef.current?.classList.toggle('is-dragging', enabled);
+  }, []);
+
+  const flushPendingScroll = useCallback(() => {
+    dragFrame.current = null;
+    if (carouselRef.current) {
+      carouselRef.current.scrollLeft = pendingScrollLeft.current;
+    }
+  }, []);
+
+  const startMomentum = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel || Math.abs(dragVelocity.current) < 0.04) return;
+
+    momentumTime.current = performance.now();
+
+    const step = (time: number) => {
+      const target = carouselRef.current;
+      if (!target) return;
+
+      const elapsed = Math.min(time - momentumTime.current, 32);
+      momentumTime.current = time;
+
+      const before = target.scrollLeft;
+      target.scrollLeft += dragVelocity.current * elapsed;
+      dragVelocity.current *= 0.92;
+
+      if (target.scrollLeft === before || Math.abs(dragVelocity.current) < 0.025) {
+        momentumFrame.current = null;
+        return;
+      }
+
+      momentumFrame.current = requestAnimationFrame(step);
+    };
+
+    momentumFrame.current = requestAnimationFrame(step);
+  }, []);
+
+  const endCarouselDrag = useCallback((e?: React.PointerEvent<HTMLDivElement>) => {
+    if (!carouselRef.current || !isDragging.current) return;
+
+    if (e && activePointerId.current !== e.pointerId) return;
+    if (e && e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    if (dragFrame.current !== null) {
+      cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = null;
+      carouselRef.current.scrollLeft = pendingScrollLeft.current;
+    }
+
+    isDragging.current = false;
+    activePointerId.current = null;
+    setDraggingStyle(false);
+    startMomentum();
+  }, [setDraggingStyle, startMomentum]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!carouselRef.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
+
+    stopMomentum();
+    isDragging.current = true;
+    activePointerId.current = e.pointerId;
+    hasDragged.current = false;
+    dragStartX.current = e.clientX;
+    lastDragX.current = e.clientX;
+    lastDragTime.current = performance.now();
+    dragVelocity.current = 0;
+    scrollStartX.current = carouselRef.current.scrollLeft;
+    pendingScrollLeft.current = carouselRef.current.scrollLeft;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDraggingStyle(true);
+  }, [setDraggingStyle, stopMomentum]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current || !carouselRef.current || activePointerId.current !== e.pointerId) return;
+    e.preventDefault();
+
+    const now = performance.now();
+    const dx = e.clientX - dragStartX.current;
+    const dt = now - lastDragTime.current;
+
+    if (Math.abs(dx) > 6) hasDragged.current = true;
+    if (dt > 0) {
+      dragVelocity.current = (lastDragX.current - e.clientX) / dt;
+    }
+
+    lastDragX.current = e.clientX;
+    lastDragTime.current = now;
+    pendingScrollLeft.current = scrollStartX.current - dx;
+
+    if (dragFrame.current === null) {
+      dragFrame.current = requestAnimationFrame(flushPendingScroll);
+    }
+  }, [flushPendingScroll]);
+
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const rawDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (rawDelta === 0) return;
+
+    const delta = e.deltaMode === 1 ? rawDelta * 16 : rawDelta;
+    const atStart = carousel.scrollLeft <= 0 && delta < 0;
+    const atEnd = carousel.scrollLeft >= carousel.scrollWidth - carousel.clientWidth - 1 && delta > 0;
+
+    if (!atStart && !atEnd) {
+      e.preventDefault();
+      stopMomentum();
+      carousel.scrollLeft += delta;
+    }
+  }, [stopMomentum]);
+
+  const handleClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!hasDragged.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    hasDragged.current = false;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+      if (momentumFrame.current !== null) cancelAnimationFrame(momentumFrame.current);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchRestaurants() {
@@ -334,8 +483,15 @@ export function MapPageContent() {
         <div className="absolute bottom-8 left-0 w-full z-10 pointer-events-none px-8">
           <div 
             ref={carouselRef}
-            className="flex gap-6 overflow-x-auto pb-6 pt-4 pointer-events-auto snap-x snap-mandatory hide-scrollbar"
+            className="map-carousel flex gap-6 overflow-x-auto pb-6 pt-4 pointer-events-auto hide-scrollbar snap-x snap-proximity scroll-px-8"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={endCarouselDrag}
+            onPointerCancel={endCarouselDrag}
+            onLostPointerCapture={endCarouselDrag}
+            onWheel={handleWheel}
+            onClickCapture={handleClickCapture}
           >
             {restaurants.map((restaurant) => {
               const resId = restaurant.id;
@@ -351,13 +507,13 @@ export function MapPageContent() {
                   key={resId} 
                   data-id={resId}
                   onClick={() => handleRestaurantSelect(resId)}
-                  className={`shrink-0 w-[340px] bg-[#faf8f6] rounded-[24px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.15)] snap-start cursor-pointer border-2 transition-all duration-300 ${
+                  className={`map-carousel-card shrink-0 w-[340px] bg-[#faf8f6] rounded-[24px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.15)] snap-center cursor-pointer border-2 transform-gpu transition-[transform,border-color,box-shadow] duration-200 ${
                     isActive ? 'border-[#db5a5a] scale-[1.02] shadow-[0_16px_40px_rgba(219,90,90,0.2)]' : 'border-transparent hover:border-[#f0ede8]'
                   }`}
                 >
                   {/* Card Image */}
                   <div className="h-[140px] relative overflow-hidden bg-[#e5e2dd]">
-                    <img src={imageUrl} alt={restaurant.name} className="w-full h-full object-cover" />
+                    <img src={imageUrl} alt={restaurant.name} draggable={false} className="w-full h-full object-cover select-none pointer-events-none" />
                     
                     {/* Badge */}
                     <div className="absolute top-4 right-4">
@@ -416,6 +572,28 @@ export function MapPageContent() {
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
+        }
+
+        .map-carousel {
+          cursor: grab;
+          touch-action: pan-x;
+          overscroll-behavior-x: contain;
+          -webkit-overflow-scrolling: touch;
+          user-select: none;
+        }
+
+        .map-carousel.is-dragging {
+          cursor: grabbing;
+          scroll-snap-type: none;
+        }
+
+        .map-carousel.is-dragging * {
+          cursor: grabbing !important;
+        }
+
+        .map-carousel-card {
+          contain: layout paint;
+          -webkit-user-drag: none;
         }
         
         /* Adjust Leaflet zoom controls so it doesn't overlap carousel */

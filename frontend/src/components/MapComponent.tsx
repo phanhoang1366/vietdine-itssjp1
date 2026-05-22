@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaf
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
 import L from 'leaflet';
+// Note: L and useEffect are still used by MapUpdater and createCustomIcon
 import ReactDOMServer from 'react-dom/server';
 import { Utensils } from 'lucide-react';
 
@@ -84,6 +85,7 @@ export default function MapComponent({ restaurants, activeRestaurantId, onRestau
       
       {/* Custom Zoom Control positioned bottom right above carousel */}
       <ZoomControl position="bottomright" />
+
 
       {restaurants.map((restaurant) => {
         const restaurantId = restaurant.id ?? restaurant.res_id;
