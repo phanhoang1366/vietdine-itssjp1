@@ -27,6 +27,7 @@ export default function BookingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [createdReservationId, setCreatedReservationId] = useState<number | null>(null);
   const { t } = useLanguage();
 
   if (!isOpen) return null;
@@ -74,6 +75,7 @@ export default function BookingModal({
         return;
       }
 
+      setCreatedReservationId(data.reservation?.id ?? null);
       setSuccess(true);
     } catch {
       setError(t.booking_modal_network_err);
@@ -88,6 +90,7 @@ export default function BookingModal({
     setGuestCount(2);
     setError('');
     setSuccess(false);
+    setCreatedReservationId(null);
     onClose();
   };
 
@@ -125,6 +128,11 @@ export default function BookingModal({
               </div>
             </div>
             <div className="booking-form-actions">
+              {createdReservationId && (
+                <Link href={`/bookings/${createdReservationId}`} className="booking-btn-primary">
+                  {t.rest_contact}
+                </Link>
+              )}
               <Link href="/bookings" className="booking-btn-primary">
                 {t.booking_modal_view_list}
               </Link>

@@ -337,6 +337,13 @@
   max-width: 80%;
 }
 
+.promo-banner-menu {
+  display: block;
+  margin-top: 6px;
+  color: #f6e2b2;
+  font-size: 0.9rem;
+}
+
 .promo-banner-btn {
   display: inline-block;
   padding: 10px 24px;
@@ -403,6 +410,12 @@
 .res-meta {
   font-size: 0.8rem;
   color: #8a7a74;
+  margin-top: 2px;
+}
+
+.res-contact {
+  font-size: 0.76rem;
+  color: #6d4c41;
   margin-top: 2px;
 }
 
@@ -721,6 +734,20 @@
   color: #5a4a44;
   margin-bottom: 16px;
   line-height: 1.5;
+}
+
+.promo-menu-target {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  color: #6d4c41;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.promo-menu-target .material-symbols-outlined {
+  font-size: 18px;
 }
 
 .promo-card-meta {
@@ -1234,6 +1261,15 @@
   text-overflow: ellipsis;
 }
 
+.conv-contact {
+  font-size: 0.74rem;
+  color: #6d4c41;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .conv-right {
   display: flex;
   flex-direction: column;
@@ -1322,6 +1358,20 @@
   margin-top: 2px;
 }
 
+.chat-detail-contact {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: #6d4c41;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.chat-detail-contact .material-symbols-outlined {
+  font-size: 16px;
+}
+
 .online-dot {
   width: 8px;
   height: 8px;
@@ -1382,14 +1432,15 @@
 }
 
 .owner-chat-bubble.sent {
-  background: linear-gradient(135deg, #4e342e, #3e2723);
+  background: #0b84ff;
   color: white;
   border-bottom-right-radius: 6px;
 }
 
 .owner-chat-bubble.received {
-  background: #e8e4df;
+  background: #ffffff;
   color: #2d1f1a;
+  border: 1px solid #eee8e3;
   border-bottom-left-radius: 6px;
 }
 
@@ -1406,6 +1457,48 @@
 
 .owner-chat-bubble.received .owner-chat-time {
   color: #8a7a74;
+}
+
+.chat-retracted {
+  font-style: italic;
+  opacity: 0.72;
+}
+
+.owner-chat-message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.owner-chat-message-actions button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.78;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.owner-chat-message-actions button:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.owner-chat-edit-box {
+  min-width: 220px;
+}
+
+.owner-chat-edit-box input {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.8);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  color: #2d1f1a;
+  outline: none;
 }
 
 /* ─── Chat Input ───────────────────────────────────────────── */

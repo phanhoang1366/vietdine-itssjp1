@@ -23,11 +23,13 @@ model User {
   roleId       Int           @map("role_id")
   avatarUrl    String?       @map("avatar_url") @db.VarChar(255)
   googleId     String?       @unique @map("google_id") @db.VarChar(255)
+  facebookId   String?       @unique @map("facebook_id") @db.VarChar(255)
 
   role         Role          @relation(fields: [roleId], references: [id])
   restaurants  Restaurant[]
   reservations Reservation[]
   sentMessages ChatMessage[]
+  directConversations DirectConversation[] @relation("CustomerDirectConversations")
   reviews      Review[]
   searchHistories SearchHistory[]
   savedRestaurants SavedRestaurant[]
@@ -57,6 +59,7 @@ model Restaurant {
   reviews      Review[]
   savedBy      SavedRestaurant[]
   promotions   Promotion[]
+  directConversations DirectConversation[]
 
   @@map("Restaurants")
 }
@@ -71,6 +74,7 @@ model Menu {
   price        Float?     @default(0)
 
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  promotions   Promotion[]
 
   @@map("Menus")
 }
@@ -97,17 +101,38 @@ model Reservation {
 }
 
 model ChatMessage {
-  id             Int         @id @default(autoincrement()) @map("msg_id")
-  reservationId  Int         @map("rev_id")
-  senderId       Int         @map("sender_id")
-  messageContent String      @map("message_content")
-  sentAt         DateTime    @default(now()) @map("sent_at")
-  isRead         Boolean     @default(false) @map("is_read")
+  id             Int                 @id @default(autoincrement()) @map("msg_id")
+  reservationId  Int?                @map("rev_id")
+  conversationId Int?                @map("conversation_id")
+  senderId       Int                 @map("sender_id")
+  messageContent String              @map("message_content")
+  sentAt         DateTime            @default(now()) @map("sent_at")
+  editedAt       DateTime?           @map("edited_at")
+  isRead         Boolean             @default(false) @map("is_read")
+  isRetracted    Boolean             @default(false) @map("is_retracted")
 
-  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
-  sender         User        @relation(fields: [senderId], references: [id])
+  reservation    Reservation?        @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  conversation   DirectConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User                @relation(fields: [senderId], references: [id])
 
+  @@index([conversationId])
+  @@index([reservationId])
   @@map("ChatMessages")
+}
+
+model DirectConversation {
+  id           Int      @id @default(autoincrement()) @map("conversation_id")
+  userId       Int      @map("user_id")
+  restaurantId Int      @map("res_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User       @relation("CustomerDirectConversations", fields: [userId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@unique([userId, restaurantId])
+  @@map("DirectConversations")
 }
 
 // Added from ERD diagram
@@ -153,6 +178,7 @@ model SavedRestaurant {
 model Promotion {
   id              Int        @id @default(autoincrement()) @map("promo_id")
   restaurantId    Int        @map("res_id")
+  menuId          Int?       @map("menu_id")
   title           String     @db.VarChar(255)
   description     String?
   discountPercent Int        @map("discount_percent")
@@ -161,6 +187,8 @@ model Promotion {
   isActive        Boolean    @default(true) @map("is_active")
 
   restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menu            Menu?      @relation(fields: [menuId], references: [id], onDelete: SetNull)
 
+  @@index([menuId])
   @@map("Promotions")
 }

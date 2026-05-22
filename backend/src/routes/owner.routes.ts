@@ -18,6 +18,19 @@ async function getRestaurantOrFail(req: Request, res: Response) {
   return restaurant;
 }
 
+function parseOptionalNumber(value: unknown) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalMenuId(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────
 router.get('/dashboard', async (req: Request, res: Response) => {
   try {
@@ -87,7 +100,7 @@ router.post('/menu', async (req: Request, res: Response) => {
       dishNameJp,
       ingredients,
       imageUrl,
-      price: price ? parseFloat(price) : undefined,
+      price: parseOptionalNumber(price),
     });
     res.status(201).json({ menu });
   } catch (error) {
@@ -111,7 +124,7 @@ router.put('/menu/:id', async (req: Request, res: Response) => {
       dishNameJp,
       ingredients,
       imageUrl,
-      price: price !== undefined ? parseFloat(price) : undefined,
+      price: parseOptionalNumber(price),
     });
 
     if (!updated) {
@@ -161,7 +174,7 @@ router.post('/promotions', async (req: Request, res: Response) => {
     const restaurant = await getRestaurantOrFail(req, res);
     if (!restaurant) return;
 
-    const { title, description, discountPercent, startDate, endDate } = req.body;
+    const { title, description, discountPercent, startDate, endDate, isActive, menuId } = req.body;
     if (!title || !discountPercent || !startDate || !endDate) {
       return res.status(400).json({ message: '必須項目を入力してください' });
     }
@@ -172,9 +185,14 @@ router.post('/promotions', async (req: Request, res: Response) => {
       discountPercent: parseInt(discountPercent),
       startDate,
       endDate,
+      isActive,
+      menuId: parseOptionalMenuId(menuId),
     });
     res.status(201).json({ promotion });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'MENU_NOT_FOUND') {
+      return res.status(400).json({ message: '選択したメニューが見つかりません' });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -189,12 +207,18 @@ router.put('/promotions/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid promotion ID' });
     }
 
-    const updated = await ownerService.updatePromotion(promoId, restaurant.id, req.body);
+    const updated = await ownerService.updatePromotion(promoId, restaurant.id, {
+      ...req.body,
+      menuId: parseOptionalMenuId(req.body.menuId),
+    });
     if (!updated) {
       return res.status(404).json({ message: 'プロモーションが見つかりません' });
     }
     res.json({ promotion: updated });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'MENU_NOT_FOUND') {
+      return res.status(400).json({ message: '選択したメニューが見つかりません' });
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 });

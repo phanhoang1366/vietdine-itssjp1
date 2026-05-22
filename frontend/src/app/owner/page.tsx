@@ -20,9 +20,17 @@ interface DashboardData {
     averageRating: number;
     reviewCount: number;
     satisfaction: number;
+    menuCount: number;
+    waitingReservations: number;
+    confirmedReservations: number;
+    cancelledReservations: number;
     activePromotion: {
       title: string;
       discountPercent: number;
+      menu: {
+        dishNameVn: string;
+        dishNameJp: string;
+      } | null;
     } | null;
     recentReservations: Array<{
       id: number;
@@ -31,6 +39,7 @@ interface DashboardData {
       status: 'Waiting' | 'Confirmed' | 'Cancelled';
       user: {
         fullName: string;
+        emailPhone: string;
       };
     }>;
   };
@@ -42,6 +51,9 @@ interface OwnerStatusText {
   owner_res_action_confirm: string;
   owner_res_tab_all: string;
   owner_res_action_reject: string;
+  owner_res_status_confirmed: string;
+  owner_res_status_waiting: string;
+  owner_res_status_cancelled: string;
 }
 
 function formatDate(dateStr: string, t: OwnerStatusText, locale: string) {
@@ -78,9 +90,9 @@ function getStatusClass(status: string) {
 
 function getStatusLabel(status: string, t: OwnerStatusText) {
   switch (status) {
-    case 'Confirmed': return t.owner_res_action_confirm;
-    case 'Waiting': return t.owner_res_tab_all; // or a specific waiting status if available
-    case 'Cancelled': return t.owner_res_action_reject;
+    case 'Confirmed': return t.owner_res_status_confirmed;
+    case 'Waiting': return t.owner_res_status_waiting;
+    case 'Cancelled': return t.owner_res_status_cancelled;
     default: return status;
   }
 }
@@ -96,7 +108,7 @@ export default function OwnerDashboard() {
 
   async function fetchDashboard() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/owner/dashboard`, {
+      const res = await fetch('/api/owner/dashboard', {
         credentials: 'include',
       });
       if (res.ok) {
@@ -152,21 +164,22 @@ export default function OwnerDashboard() {
               icon="event_note"
               value={stats?.totalReservations?.toString() || '0'}
               label={t.owner_stat_total_res}
-              trend="+12%"
+              trend={`${stats?.confirmedReservations || 0} ${t.owner_res_status_confirmed}`}
               trendUp={true}
             />
             <StatCard
-              icon="payments"
-              value="45.2M ₫"
-              label={t.owner_stat_weekly_sales}
-              trend="+8%"
+              icon="restaurant_menu"
+              value={stats?.menuCount?.toString() || '0'}
+              label={t.owner_stat_menu_items}
+              trend={`${stats?.waitingReservations || 0} ${t.owner_res_status_waiting}`}
               trendUp={true}
             />
             <StatCard
               icon="star"
               value={`${stats?.averageRating || 0}/5.0`}
-              label={`${stats?.satisfaction || 0}%`}
-              trend=""
+              label={t.owner_stat_reviews.replace('{count}', (stats?.reviewCount || 0).toString())}
+              trend={stats?.reviewCount ? `${stats.satisfaction}%` : ''}
+              trendUp={true}
             />
           </div>
 
@@ -176,6 +189,11 @@ export default function OwnerDashboard() {
               <p className="promo-banner-label">{t.owner_promo_active_label}</p>
               <p className="promo-banner-title">
                 {stats.activePromotion.title} - {stats.activePromotion.discountPercent}% OFF
+                {stats.activePromotion.menu && (
+                  <span className="promo-banner-menu">
+                    {stats.activePromotion.menu.dishNameVn}
+                  </span>
+                )}
               </p>
               <Link href="/owner/promotions" className="promo-banner-btn">
                 {t.owner_promo_update}
@@ -205,6 +223,7 @@ export default function OwnerDashboard() {
                         <p className="res-meta">
                           {t.owner_res_guests_label.replace('{count}', rev.guestCount.toString())} • {formatDate(rev.revDatetime, t, locale)}
                         </p>
+                        <p className="res-contact">{rev.user.emailPhone}</p>
                       </div>
                       <span className={`res-status ${getStatusClass(rev.status)}`}>
                         {getStatusLabel(rev.status, t)}

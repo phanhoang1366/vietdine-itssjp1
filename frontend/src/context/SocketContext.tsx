@@ -26,10 +26,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Connect to Socket.IO server
+    // Connect to Socket.IO server with limited reconnection
     const newSocket = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}`, {
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
     });
 
     newSocket.on('connect', () => {
@@ -43,7 +45,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     });
 
     newSocket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
+      // Stop reconnecting on auth errors — session is invalid or missing
+      const authErrors = ['Authentication required', 'Invalid session', 'Authentication failed'];
+      if (authErrors.some(msg => err.message.includes(msg))) {
+        console.warn('🔌 Socket auth failed, stopping reconnection');
+        newSocket.disconnect();
+      } else {
+        console.warn('🔌 Socket connection error:', err.message);
+      }
       setIsConnected(false);
     });
 

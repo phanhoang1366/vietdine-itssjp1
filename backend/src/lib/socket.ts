@@ -96,9 +96,76 @@ export function initializeSocket(server: HttpServer): Server {
       }
     });
 
+    socket.on('join_direct_conversation', async (conversationId: number) => {
+      const roomName = `direct_${conversationId}`;
+      socket.join(roomName);
+      console.log(`User ${userId} joined room ${roomName}`);
+
+      await chatService.markDirectMessagesAsRead(conversationId, userId);
+      socket.to(roomName).emit('user_online', { userId });
+    });
+
+    socket.on('leave_direct_conversation', (conversationId: number) => {
+      const roomName = `direct_${conversationId}`;
+      socket.leave(roomName);
+    });
+
+    socket.on('send_direct_message', async (data: { conversationId: number; content: string }) => {
+      try {
+        const message = await chatService.createDirectMessage(
+          data.conversationId,
+          userId,
+          data.content
+        );
+
+        io.to(`direct_${data.conversationId}`).emit('new_direct_message', message);
+      } catch (err) {
+        console.error('Direct message send error:', err);
+        socket.emit('message_error', { error: 'メッセージの送信に失敗しました' });
+      }
+    });
+
+    socket.on('edit_message', async (data: { messageId: number; content: string }) => {
+      try {
+        const result = await chatService.updateOwnMessage(
+          data.messageId,
+          userId,
+          data.content
+        );
+
+        if (result.roomName) {
+          io.to(result.roomName).emit('message_updated', result.message);
+        }
+      } catch (err) {
+        console.error('Message edit error:', err);
+        socket.emit('message_error', { error: 'メッセージの編集に失敗しました' });
+      }
+    });
+
+    socket.on('retract_message', async (messageId: number) => {
+      try {
+        const result = await chatService.retractOwnMessage(messageId, userId);
+
+        if (result.roomName) {
+          io.to(result.roomName).emit('message_updated', result.message);
+        }
+      } catch (err) {
+        console.error('Message retract error:', err);
+        socket.emit('message_error', { error: 'メッセージの取り消しに失敗しました' });
+      }
+    });
+
     // Typing indicator
     socket.on('typing', (data: { reservationId: number; isTyping: boolean }) => {
       const roomName = `reservation_${data.reservationId}`;
+      socket.to(roomName).emit('user_typing', {
+        userId,
+        isTyping: data.isTyping,
+      });
+    });
+
+    socket.on('direct_typing', (data: { conversationId: number; isTyping: boolean }) => {
+      const roomName = `direct_${data.conversationId}`;
       socket.to(roomName).emit('user_typing', {
         userId,
         isTyping: data.isTyping,
@@ -113,6 +180,16 @@ export function initializeSocket(server: HttpServer): Server {
         socket.to(roomName).emit('messages_read', { userId, reservationId });
       } catch (err) {
         console.error('Mark read error:', err);
+      }
+    });
+
+    socket.on('mark_direct_read', async (conversationId: number) => {
+      try {
+        await chatService.markDirectMessagesAsRead(conversationId, userId);
+        const roomName = `direct_${conversationId}`;
+        socket.to(roomName).emit('messages_read', { userId, conversationId });
+      } catch (err) {
+        console.error('Direct mark read error:', err);
       }
     });
 

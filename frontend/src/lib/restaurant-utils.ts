@@ -16,6 +16,12 @@ export interface MenuLike {
   ingredients?: string | null;
   imageUrl?: string | null;
   price?: number | null;
+  promotions?: Array<{
+    id: number;
+    title: string;
+    discountPercent: number;
+    endDate?: string | null;
+  }> | null;
 }
 
 export interface RestaurantLike {
@@ -29,6 +35,11 @@ export interface RestaurantLike {
   description?: string | null;
   reviews?: ReviewLike[] | null;
   menus?: MenuLike[] | null;
+  owner?: {
+    fullName?: string | null;
+    avatarUrl?: string | null;
+    emailPhone?: string | null;
+  } | null;
   categories?: string | null;
   maxSeats?: number | null;
   activeReservationGuestCount?: number | null;

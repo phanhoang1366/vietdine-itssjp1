@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { signup } from '@/actions/auth';
 import AuthInput from '@/components/AuthInput';
 import AuthButton from '@/components/AuthButton';
+import SocialLoginButtons from '@/components/SocialLoginButtons';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function RegisterPage() {
@@ -176,30 +177,7 @@ export default function RegisterPage() {
               </Link>
             </p>
 
-            {/* Social Icons */}
-            <div className="flex justify-center gap-4 mt-12">
-              <button
-                type="button"
-                className="w-8 h-8 rounded-sm bg-[#a0938f] flex items-center justify-center hover:bg-[#827471] transition-colors"
-                onClick={() => alert(t.auth_google_soon)}
-              >
-                <span className="text-white text-[10px] font-bold">G</span>
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-sm bg-[#a0938f] flex items-center justify-center hover:bg-[#827471] transition-colors"
-                onClick={() => alert(t.auth_fb_soon)}
-              >
-                <span className="text-white text-[12px] font-bold">f</span>
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-sm bg-[#a0938f] flex items-center justify-center hover:bg-[#827471] transition-colors"
-                onClick={() => window.location.href = 'mailto:support@vietdine.local'}
-              >
-                <span className="material-symbols-outlined text-white text-[16px]">mail</span>
-              </button>
-            </div>
+            <SocialLoginButtons />
 
             {/* Footer */}
             <p className="mt-4 text-center text-[9px] text-[#a0938f] font-bold uppercase tracking-[0.2em]">

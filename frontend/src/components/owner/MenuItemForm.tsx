@@ -19,13 +19,17 @@ interface MenuItemFormProps {
   isSubmitting?: boolean;
 }
 
+interface MenuItemFormState extends Omit<MenuItemData, 'id' | 'price'> {
+  price: string;
+}
+
 export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmitting }: MenuItemFormProps) {
-  const [formData, setFormData] = useState<Omit<MenuItemData, 'id'>>({
+  const [formData, setFormData] = useState<MenuItemFormState>({
     dishNameVn: '',
     dishNameJp: '',
     ingredients: '',
     imageUrl: '',
-    price: 0,
+    price: '',
   });
   const { t } = useLanguage();
 
@@ -36,14 +40,17 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
         dishNameJp: initialData.dishNameJp,
         ingredients: initialData.ingredients || '',
         imageUrl: initialData.imageUrl || '',
-        price: initialData.price || 0,
+        price: initialData.price ? initialData.price.toString() : '',
       });
     }
   }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    await onSubmit({
+      ...formData,
+      price: formData.price === '' ? 0 : Number(formData.price),
+    });
   };
 
   return (
@@ -96,7 +103,7 @@ export default function MenuItemForm({ initialData, onSubmit, onCancel, isSubmit
               <input
                 type="number"
                 value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="85000"
                 min="0"
               />
