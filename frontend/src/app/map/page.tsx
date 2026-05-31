@@ -15,8 +15,39 @@ import {
   type RestaurantLike,
 } from '@/lib/restaurant-utils';
 
-type FeatureFilterKey = 'isClean' | 'hasJpMenu' | 'hasAirCon' | 'hasJpStaff';
-type FeatureFilters = Record<FeatureFilterKey, boolean>;
+const popularSearchTags = [
+  "Nhân viên biết tiếng Nhật - 日本語対応スタッフ",
+  "Có menu tiếng Nhật - 日本語メニューあり",
+  "Nhân viên biết tiếng Anh - 英語対応スタッフ",
+  "Dịch vụ chăm sóc kiểu Nhật (Omotenashi) - おもてなしサービス",
+  "Có phòng riêng - 個室あり",
+  "Có điều hòa - エアコン完備",
+  "Có Wi-Fi miễn phí - 無料Wi-Fiあり",
+  "Có chỗ ngồi kiểu Nhật (Tatami/Horigotatsu) - 座敷・掘りごたつあり",
+  "Khu vực hút thuốc / Không hút thuốc riêng biệt - 分煙 (hoặc 喫煙・禁煙席あり)",
+  "Có ghế ngồi tại quầy - カウンター席あり",
+  "Có bãi đậu xe - 駐車場あり",
+  "Có phục vụ rượu Sake / Shochu - 日本酒・焼酎あり",
+  "Có thực đơn theo Set / Course - コース料理あり",
+  "Uống không giới hạn (Nomihodai) - 飲み放題あり",
+  "Chuyên Hải sản / Sashimi - 海鮮・刺身メイン",
+  "Có món chay - ベジタリアンメニューあり",
+  "Chấp nhận thanh toán thẻ - クレジットカード決済可",
+  "Hỗ trợ xuất hóa đơn VAT - レッドインボイス（VAT）発行可",
+  "Đặt bàn trực tuyến - オンライン予約可",
+  "Nhà vệ sinh kiểu Nhật - ウォシュレット完備",
+  "Phù hợp để tiếp khách công việc (Business/Đãi tiệc) - 接待向け",
+  "Có phòng tiệc sức chứa lớn - 大宴会場あり",
+  "Mở cửa phục vụ khuya - 深夜営業あり",
+  "Được phép mang đồ uống/rượu từ ngoài vào - 持ち込み可",
+  "Có dịch vụ xe đưa đón - 送迎サービスあり",
+  "Không gian yên tĩnh - 落ち着いた雰囲気",
+  "Có ghế dành cho trẻ em - 子供用椅子あり",
+  "Có view đẹp / Ngắm cảnh ban đêm - 景色が綺麗 / 夜景が見える",
+  "Phục vụ thực đơn bữa trưa (Lunch set) - ランチ営業あり",
+  "Có đồ ăn mang về (Takeout) - テイクアウト可",
+  "Hỗ trợ đặt bánh kem / Tổ chức kỷ niệm - サプライズ対応可 (hoặc ケーキ手配可)"
+];
 
 const MapLoading = () => {
   const { t } = useLanguage();
@@ -38,12 +69,7 @@ export function MapPageContent() {
   const [searchQuery, setSearchQuery] = useState(q);
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState<FeatureFilters>({
-    isClean: false,
-    hasJpMenu: false,
-    hasAirCon: false,
-    hasJpStaff: false,
-  });
+
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
   
@@ -204,9 +230,7 @@ export function MapPageContent() {
         const params = new URLSearchParams();
         params.set('limit', '60');
         if (q) params.set('q', q);
-        Object.entries(filters).forEach(([key, enabled]) => {
-          if (enabled) params.set(key, 'true');
-        });
+
 
         const url = `/api/restaurants${params.toString() ? `?${params}` : ''}`;
         const res = await fetch(url);
@@ -227,7 +251,7 @@ export function MapPageContent() {
     };
 
     fetchRestaurants();
-  }, [q, filters]);
+  }, [q]);
 
   const saveSearchKeyword = async (keyword: string) => {
     if (!isAuthenticated) return;
@@ -257,16 +281,12 @@ export function MapPageContent() {
     router.push(`/map?q=${encodeURIComponent(keyword)}`);
   };
 
-  const toggleFilter = (key: FeatureFilterKey) => {
-    setFilters((current) => ({ ...current, [key]: !current[key] }));
+  const handleTagSearch = async (keyword: string) => {
+    setSearchQuery(keyword);
+    setShowFilters(false);
+    await saveSearchKeyword(keyword);
+    router.push(`/map?q=${encodeURIComponent(keyword)}`);
   };
-
-  const featureFilterOptions: Array<{ key: FeatureFilterKey; label: string }> = [
-    { key: 'isClean', label: t.restaurant_clean },
-    { key: 'hasJpMenu', label: t.restaurant_jp_menu },
-    { key: 'hasAirCon', label: t.restaurant_air_con },
-    { key: 'hasJpStaff', label: t.restaurant_jp_staff },
-  ];
 
   const scrollToRestaurantCard = (id: number) => {
     if (!carouselRef.current) return;
@@ -283,17 +303,7 @@ export function MapPageContent() {
     scrollToRestaurantCard(id);
   };
 
-  const clearFilters = () => {
-    setFilters({
-      isClean: false,
-      hasJpMenu: false,
-      hasAirCon: false,
-      hasJpStaff: false,
-    });
-  };
-
   const handleShowRestaurants = () => {
-    clearFilters();
     setShowFilters(false);
     if (q) router.push('/map');
     if (restaurants[0]?.id) {
@@ -304,12 +314,6 @@ export function MapPageContent() {
 
   const handleShowFeatured = () => {
     setShowFilters(false);
-    setFilters({
-      isClean: true,
-      hasJpMenu: true,
-      hasAirCon: false,
-      hasJpStaff: false,
-    });
     if (q) router.push('/map');
   };
 
@@ -440,22 +444,23 @@ export function MapPageContent() {
               </button>
 
               {showFilters && (
-                <div className="absolute right-0 top-14 w-[280px] bg-white rounded-2xl p-3 shadow-[0_16px_40px_rgba(0,0,0,0.16)] border border-[#f0ede8] flex flex-col gap-2">
-                  {featureFilterOptions.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => toggleFilter(option.key)}
-                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-colors ${
-                        filters[option.key]
-                          ? 'bg-[#3d2e28] text-white'
-                          : 'bg-[#faf8f6] text-[#3d2e28] hover:bg-[#f0ede8]'
-                      }`}
-                    >
-                      <span>{option.label}</span>
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
-                  ))}
+                <div className="absolute right-0 top-14 w-[360px] max-h-[70vh] overflow-y-auto bg-white rounded-2xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.16)] border border-[#f0ede8] flex flex-col gap-2 z-50">
+                  <div className="mb-2 px-1">
+                    <h3 className="font-bold text-[15px] text-[#3d2e28]">人気の検索タグ</h3>
+                    <p className="text-[12px] text-[#827471]">Tag tìm kiếm phổ biến</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {popularSearchTags.map((tag, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleTagSearch(tag)}
+                        className="text-left px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors bg-[#faf8f6] text-[#3d2e28] hover:bg-[#f0ede8]"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

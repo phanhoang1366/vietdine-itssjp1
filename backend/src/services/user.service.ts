@@ -192,3 +192,15 @@ export async function findOrCreateFacebookUser(data: {
     return user;
   });
 }
+
+export async function getUserReviews(userId: number) {
+  return await prisma.review.findMany({
+    where: { userId },
+    include: {
+      restaurant: {
+        select: { id: true, name: true, imageUrl: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+}
