@@ -9,31 +9,20 @@ import { useState, useEffect } from 'react';
 import { calculateDistanceKm, formatDistance, type Coordinates } from '@/lib/geo';
 import { getAverageRating, getPriceRange, type RestaurantLike } from '@/lib/restaurant-utils';
 
-type FeatureFilterKey = 'isClean' | 'hasJpMenu' | 'hasAirCon' | 'hasJpStaff';
-type FeatureFilters = Record<FeatureFilterKey, boolean>;
+
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [restaurants, setRestaurants] = useState<RestaurantLike[]>([]);
-  const [filters, setFilters] = useState<FeatureFilters>({
-    isClean: false,
-    hasJpMenu: false,
-    hasAirCon: false,
-    hasJpStaff: false,
-  });
+  const [showFilters, setShowFilters] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const { t } = useLanguage();
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     async function fetchRestaurants() {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, enabled]) => {
-        if (enabled) params.set(key, 'true');
-      });
-
       try {
-        const res = await fetch(`/api/restaurants${params.toString() ? `?${params}` : ''}`);
+        const res = await fetch(`/api/restaurants`);
         if (!res.ok) {
           setRestaurants([]);
           return;
@@ -47,7 +36,7 @@ export default function Home() {
     }
 
     fetchRestaurants();
-  }, [filters]);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated || !navigator.geolocation) return;
@@ -71,16 +60,9 @@ export default function Home() {
     }
   };
 
-  const toggleFilter = (key: FeatureFilterKey) => {
-    setFilters((current) => ({ ...current, [key]: !current[key] }));
+  const handleTagSearch = (keyword: string) => {
+    window.location.href = `/map?q=${encodeURIComponent(keyword)}`;
   };
-
-  const featureFilterOptions: Array<{ key: FeatureFilterKey; label: string }> = [
-    { key: 'isClean', label: t.restaurant_clean },
-    { key: 'hasJpMenu', label: t.restaurant_jp_menu },
-    { key: 'hasAirCon', label: t.restaurant_air_con },
-    { key: 'hasJpStaff', label: t.restaurant_jp_staff },
-  ];
 
   // Search/List View for authenticated users (or the existing default view)
   const renderSearchView = () => (
@@ -142,22 +124,39 @@ export default function Home() {
           </button>
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-          {featureFilterOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => toggleFilter(option.key)}
-              className={`flex items-center gap-2 px-5 py-3 border rounded-xl text-[14px] font-bold transition-colors whitespace-nowrap shadow-sm ${
-                filters[option.key]
-                  ? 'bg-[#3d2e28] border-[#3d2e28] text-white'
-                  : 'bg-white border-[#f0ede8] text-[#3d2e28] hover:bg-[#f6f3ee]'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {option.label}
-            </button>
-          ))}
+        <div className="relative w-full md:w-auto z-50">
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center justify-between gap-2 px-5 py-3 w-full md:w-[320px] bg-white border border-[#f0ede8] rounded-xl text-[14px] font-bold text-[#3d2e28] hover:bg-[#f6f3ee] transition-colors shadow-sm"
+          >
+            <span className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-[#827471]" />
+              {t.search_tags_title}
+            </span>
+            <svg className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showFilters && (
+            <div className="absolute right-0 md:right-0 top-[calc(100%+8px)] w-full md:w-[360px] max-h-[400px] overflow-y-auto bg-white rounded-2xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.16)] border border-[#f0ede8] flex flex-col gap-1.5 z-50 hide-scrollbar">
+              <div className="mb-2 px-1">
+                <h3 className="font-bold text-[15px] text-[#3d2e28]">人気の検索タグ</h3>
+                <p className="text-[12px] text-[#827471]">{t.search_tags_title}</p>
+              </div>
+              {(t.search_tags || []).map((tag, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleTagSearch(tag)}
+                  className="text-left px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors bg-[#faf8f6] text-[#3d2e28] hover:bg-[#f0ede8]"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
