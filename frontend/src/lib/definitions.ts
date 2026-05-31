@@ -23,6 +23,10 @@ export interface SafeUser {
   restaurantName?: string;
   avatarUrl?: string | null;
   createdAt?: Date;
+  stats?: {
+    reviews: number;
+    reservations: number;
+  };
 }
 
 export interface SessionPayload {

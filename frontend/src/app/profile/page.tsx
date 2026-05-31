@@ -81,22 +81,22 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Stats Section */}
+                {/* Stats Section */}
         <div className="grid grid-cols-2 gap-4 w-full mb-12">
-          <div className="bg-[#f5f2eb] rounded-3xl p-6 flex flex-col justify-between h-[140px]">
-            <MessageSquare className="w-7 h-7 text-[#504442] mb-4" strokeWidth={1.5} />
+          <Link href="/profile/reviews" className="bg-[#f5f2eb] rounded-3xl p-6 flex flex-col justify-between h-[140px] hover:shadow-md transition-shadow group">
+            <MessageSquare className="w-7 h-7 text-[#504442] mb-4 group-hover:text-[#8a6b32] transition-colors" strokeWidth={1.5} />
             <div>
-              <div className="text-[28px] font-black leading-none mb-1">—</div>
-              <div className="text-[10px] font-bold text-[#504442] tracking-wider uppercase">{t.profile_reviews_label}</div>
+              <div className="text-[28px] font-black leading-none mb-1">{user?.stats?.reviews ?? '—'}</div>
+              <div className="text-[10px] font-bold text-[#504442] tracking-wider uppercase">{t.profile_reviews || 'REVIEWS'}</div>
             </div>
-          </div>
-          <div className="bg-[#f5f2eb] rounded-3xl p-6 flex flex-col justify-between h-[140px]">
-            <Calendar className="w-7 h-7 text-[#504442] mb-4" strokeWidth={1.5} />
+          </Link>
+          <Link href="/bookings" className="bg-[#f5f2eb] rounded-3xl p-6 flex flex-col justify-between h-[140px] hover:shadow-md transition-shadow group">
+            <Calendar className="w-7 h-7 text-[#504442] mb-4 group-hover:text-[#8a6b32] transition-colors" strokeWidth={1.5} />
             <div>
-              <div className="text-[28px] font-black leading-none mb-1">—</div>
-              <div className="text-[10px] font-bold text-[#504442] tracking-wider uppercase">{t.profile_bookings_label}</div>
+              <div className="text-[28px] font-black leading-none mb-1">{user?.stats?.reservations ?? '—'}</div>
+              <div className="text-[10px] font-bold text-[#504442] tracking-wider uppercase">{t.profile_bookings || 'BOOKINGS'}</div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Settings Section */}

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { SignupFormSchema, ProfileUpdateSchema, ChangePasswordSchema } from '../lib/definitions';
-import { findUserByEmail, createUser, findUserById, updateUser, toSafeUser, updatePassword } from '../services/user.service';
+import { findUserByEmail, createUser, findUserById, updateUser, toSafeUser, updatePassword, getUserReviews } from '../services/user.service';
 import { createSessionCookie } from '../lib/session';
 import { requireAuth } from '../middleware/auth.middleware';
 import { hashSync, compareSync } from 'bcryptjs';
@@ -113,6 +113,19 @@ router.post('/change-password', requireAuth, async (req: Request, res: Response)
     res.json({ message: 'パスワードが変更されました' });
   } catch (error) {
     res.status(400).json({ message: 'Bad Request' });
+  }
+});
+
+
+// GET /api/users/profile/reviews
+router.get('/profile/reviews', requireAuth, async (req: Request, res: Response) => {
+  const session = (req as any).user;
+  try {
+    const reviews = await getUserReviews(session.userId);
+    res.json({ reviews });
+  } catch (error) {
+    console.error('Fetch user reviews error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
