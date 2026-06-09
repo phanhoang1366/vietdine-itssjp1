@@ -24,11 +24,10 @@ function parseOptionalNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function parseOptionalMenuId(value: unknown) {
+function parseOptionalMenuIds(value: unknown) {
   if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  if (!Array.isArray(value)) return undefined;
+  return value.map(Number).filter(n => Number.isInteger(n) && n > 0);
 }
 
 // ─── Dashboard ────────────────────────────────────────────────
@@ -174,7 +173,7 @@ router.post('/promotions', async (req: Request, res: Response) => {
     const restaurant = await getRestaurantOrFail(req, res);
     if (!restaurant) return;
 
-    const { title, description, discountPercent, startDate, endDate, isActive, menuId } = req.body;
+    const { title, description, discountPercent, startDate, endDate, isActive, menuIds } = req.body;
     if (!title || !discountPercent || !startDate || !endDate) {
       return res.status(400).json({ message: '必須項目を入力してください' });
     }
@@ -186,7 +185,7 @@ router.post('/promotions', async (req: Request, res: Response) => {
       startDate,
       endDate,
       isActive,
-      menuId: parseOptionalMenuId(menuId),
+      menuIds: parseOptionalMenuIds(menuIds),
     });
     res.status(201).json({ promotion });
   } catch (error: any) {
@@ -209,7 +208,7 @@ router.put('/promotions/:id', async (req: Request, res: Response) => {
 
     const updated = await ownerService.updatePromotion(promoId, restaurant.id, {
       ...req.body,
-      menuId: parseOptionalMenuId(req.body.menuId),
+      menuIds: parseOptionalMenuIds(req.body.menuIds),
     });
     if (!updated) {
       return res.status(404).json({ message: 'プロモーションが見つかりません' });

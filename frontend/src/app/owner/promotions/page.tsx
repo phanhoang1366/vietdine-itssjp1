@@ -7,23 +7,22 @@ import { useLanguage } from '@/context/LanguageContext';
 
 interface Promotion {
   id: number;
-  menuId: number | null;
   title: string;
   description: string | null;
   discountPercent: number;
   startDate: string;
   endDate: string;
   isActive: boolean;
-  menu: {
+  menus: {
     id: number;
     dishNameVn: string;
     dishNameJp: string;
     price: number | null;
-  } | null;
+  }[];
 }
 
 interface PromotionFormData {
-  menuId: number | null;
+  menuIds: number[];
   title: string;
   description: string;
   discountPercent: number;
@@ -199,8 +198,8 @@ export default function PromotionsPage() {
                   <div className="promo-menu-target">
                     <span className="material-symbols-outlined">restaurant_menu</span>
                     <span>
-                      {promo.menu
-                        ? `${promo.menu.dishNameVn} / ${promo.menu.dishNameJp}`
+                      {promo.menus && promo.menus.length > 0
+                        ? promo.menus.map(m => `${m.dishNameVn} / ${m.dishNameJp}`).join(', ')
                         : t.promo_form_menu_all}
                     </span>
                   </div>
@@ -243,7 +242,7 @@ export default function PromotionsPage() {
         <PromotionForm
           initialData={editItem ? {
             id: editItem.id,
-            menuId: editItem.menuId ?? null,
+            menuIds: editItem.menus ? editItem.menus.map(m => m.id) : [],
             title: editItem.title,
             description: editItem.description || '',
             discountPercent: editItem.discountPercent,

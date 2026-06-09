@@ -178,7 +178,6 @@ model SavedRestaurant {
 model Promotion {
   id              Int        @id @default(autoincrement()) @map("promo_id")
   restaurantId    Int        @map("res_id")
-  menuId          Int?       @map("menu_id")
   title           String     @db.VarChar(255)
   description     String?
   discountPercent Int        @map("discount_percent")
@@ -187,8 +186,7 @@ model Promotion {
   isActive        Boolean    @default(true) @map("is_active")
 
   restaurant      Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  menu            Menu?      @relation(fields: [menuId], references: [id], onDelete: SetNull)
+  menus           Menu[]
 
-  @@index([menuId])
   @@map("Promotions")
 }

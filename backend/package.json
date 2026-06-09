@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
-    "seed": "ts-node-dev --transpile-only prisma/seed.ts"
+    "seed": "ts-node-dev --transpile-only prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node-dev --transpile-only prisma/seed.ts"
@@ -22,7 +23,6 @@
     "google-auth-library": "^10.6.2",
     "jose": "^5.2.4",
     "pg": "^8.11.5",
-    "socket.io": "^4.8.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {

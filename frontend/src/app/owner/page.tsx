@@ -267,6 +267,12 @@ export default function OwnerDashboard() {
                   </div>
                 )}
 
+                <div className="info-item" style={{ paddingTop: '16px' }}>
+                  <span className="info-value" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2d1f1a' }}>
+                    {restaurant?.name || t.owner_info_not_set}
+                  </span>
+                </div>
+
                 <div className="info-item">
                   <span className="info-label">{t.owner_info_address}</span>
                   <span className="info-value">{restaurant?.address || t.owner_info_not_set}</span>
