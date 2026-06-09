@@ -4,7 +4,6 @@ import { createServer } from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import prisma from './db/prisma';
-import { initializeSocket } from './lib/socket';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -18,11 +17,7 @@ import chatRoutes from './routes/chat.routes';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Create HTTP server for Socket.IO
-const server = createServer(app);
 
-// Initialize Socket.IO
-initializeSocket(server);
 
 // Middleware
 const allowedOrigins = [
@@ -58,6 +53,10 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/chat', chatRoutes);
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server ready at: http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server ready at: http://localhost:${PORT}`);
+  });
+}
+
+export default app;

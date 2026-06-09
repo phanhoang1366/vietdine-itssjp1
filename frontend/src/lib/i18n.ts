@@ -451,6 +451,6 @@ export function getTranslations(locale: Locale): TranslationKeys {
   return translations[locale];
 }
 
-export function t(locale: Locale, key: keyof TranslationKeys): string {
-  return translations[locale][key] || translations['ja'][key] || key;
+export function t<K extends keyof TranslationKeys>(locale: Locale, key: K): TranslationKeys[K] {
+  return (translations[locale][key] || translations['ja'][key] || key) as any;
 }

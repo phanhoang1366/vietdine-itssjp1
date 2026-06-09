@@ -7,23 +7,25 @@ const promotionMenuSelect = {
   price: true,
 };
 
-async function resolvePromotionMenuId(
+async function resolvePromotionMenuIds(
   restaurantId: number,
-  menuId?: number | null
+  menuIds?: number[]
 ) {
-  if (menuId === undefined) return undefined;
-  if (menuId === null) return null;
+  if (!menuIds || menuIds.length === 0) return [];
 
-  const menu = await prisma.menu.findFirst({
-    where: { id: menuId, restaurantId },
+  const menus = await prisma.menu.findMany({
+    where: {
+      id: { in: menuIds },
+      restaurantId,
+    },
     select: { id: true },
   });
 
-  if (!menu) {
+  if (menus.length !== menuIds.length) {
     throw new Error('MENU_NOT_FOUND');
   }
 
-  return menu.id;
+  return menus.map((m) => m.id);
 }
 
 // ─── Restaurant ───────────────────────────────────────────────
@@ -84,7 +86,7 @@ export const getDashboardStats = async (restaurantId: number) => {
           startDate: { lte: new Date() },
         },
         include: {
-          menu: { select: promotionMenuSelect },
+          menus: { select: promotionMenuSelect },
         },
         orderBy: { startDate: 'desc' },
       }),
@@ -195,7 +197,7 @@ export const getPromotions = async (restaurantId: number) => {
   return prisma.promotion.findMany({
     where: { restaurantId },
     include: {
-      menu: { select: promotionMenuSelect },
+      menus: { select: promotionMenuSelect },
     },
     orderBy: { startDate: 'desc' },
   });
@@ -210,10 +212,10 @@ export const createPromotion = async (
     startDate: string | Date;
     endDate: string | Date;
     isActive?: boolean;
-    menuId?: number | null;
+    menuIds?: number[];
   }
 ) => {
-  const menuId = await resolvePromotionMenuId(restaurantId, data.menuId);
+  const validMenuIds = await resolvePromotionMenuIds(restaurantId, data.menuIds);
 
   return prisma.promotion.create({
     data: {
@@ -223,11 +225,11 @@ export const createPromotion = async (
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
       isActive: data.isActive ?? true,
-      ...(menuId !== undefined ? { menuId } : {}),
+      menus: validMenuIds.length > 0 ? { connect: validMenuIds.map(id => ({ id })) } : undefined,
       restaurantId,
     },
     include: {
-      menu: { select: promotionMenuSelect },
+      menus: { select: promotionMenuSelect },
     },
   });
 };
@@ -242,7 +244,7 @@ export const updatePromotion = async (
     startDate?: string | Date;
     endDate?: string | Date;
     isActive?: boolean;
-    menuId?: number | null;
+    menuIds?: number[];
   }
 ) => {
   const promo = await prisma.promotion.findFirst({
@@ -250,7 +252,7 @@ export const updatePromotion = async (
   });
   if (!promo) return null;
 
-  const menuId = await resolvePromotionMenuId(restaurantId, data.menuId);
+  const validMenuIds = await resolvePromotionMenuIds(restaurantId, data.menuIds);
 
   return prisma.promotion.update({
     where: { id: promoId },
@@ -261,10 +263,10 @@ export const updatePromotion = async (
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       endDate: data.endDate ? new Date(data.endDate) : undefined,
       isActive: data.isActive,
-      ...(menuId !== undefined ? { menuId } : {}),
+      menus: data.menuIds !== undefined ? { set: validMenuIds.map(id => ({ id })) } : undefined,
     },
     include: {
-      menu: { select: promotionMenuSelect },
+      menus: { select: promotionMenuSelect },
     },
   });
 };

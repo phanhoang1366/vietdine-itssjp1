@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 
 interface PromotionData {
   id?: number;
-  menuId: number | null;
+  menuIds: number[];
   title: string;
   description: string;
   discountPercent: number;
@@ -31,7 +31,7 @@ interface PromotionFormProps {
 
 export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmitting, menus }: PromotionFormProps) {
   const [formData, setFormData] = useState<Omit<PromotionData, 'id'>>({
-    menuId: null,
+    menuIds: [],
     title: '',
     description: '',
     discountPercent: 10,
@@ -44,7 +44,7 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
   useEffect(() => {
     if (initialData) {
       setFormData({
-        menuId: initialData.menuId ?? null,
+        menuIds: initialData.menuIds || [],
         title: initialData.title,
         description: initialData.description || '',
         discountPercent: initialData.discountPercent,
@@ -84,21 +84,32 @@ export default function PromotionForm({ initialData, onSubmit, onCancel, isSubmi
 
           <div className="form-group">
             <label>{t.promo_form_menu_label}</label>
-            <select
-              value={formData.menuId ?? ''}
-              onChange={(e) => setFormData({
-                ...formData,
-                menuId: e.target.value ? Number(e.target.value) : null,
-              })}
-              className="form-select"
-            >
-              <option value="">{t.promo_form_menu_all}</option>
+            <div className="menu-ticklist">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.menuIds.length === 0}
+                  onChange={() => setFormData({ ...formData, menuIds: [] })}
+                />
+                <span className="checkbox-text">{t.promo_form_menu_all}</span>
+              </label>
               {menus.map((menu) => (
-                <option key={menu.id} value={menu.id}>
-                  {menu.dishNameVn} / {menu.dishNameJp}
-                </option>
+                <label key={menu.id} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.menuIds.includes(menu.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({ ...formData, menuIds: [...formData.menuIds, menu.id] });
+                      } else {
+                        setFormData({ ...formData, menuIds: formData.menuIds.filter(id => id !== menu.id) });
+                      }
+                    }}
+                  />
+                  <span className="checkbox-text">{menu.dishNameVn} / {menu.dishNameJp}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="form-group">
