@@ -1382,9 +1382,16 @@ async function main() {
       title: { in: promotionData.map((promotion) => promotion.title) },
     },
   });
-  await prisma.promotion.createMany({
-    data: promotionData,
-  });
+
+  for (const promo of promotionData) {
+    const { menuId, ...data } = promo;
+    await prisma.promotion.create({
+      data: {
+        ...data,
+        menus: menuId ? { connect: [{ id: menuId }] } : undefined,
+      },
+    });
+  }
   console.log('✅ Promotions created');
 
   // ─── Saved Restaurants ──────────────────────────────────────

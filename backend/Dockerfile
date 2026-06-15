@@ -6,7 +6,7 @@ RUN apk add --no-cache openssl
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 FROM deps AS builder
 

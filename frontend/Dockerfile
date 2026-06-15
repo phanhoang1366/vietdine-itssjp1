@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
-RUN npm ci
-RUN npm install lightningcss-linux-x64-musl@1.32.0 @tailwindcss/oxide-linux-x64-musl@4.3.0 --no-save
+RUN npm ci --ignore-scripts
+RUN npm install lightningcss-linux-x64-musl@1.32.0 @tailwindcss/oxide-linux-x64-musl@4.3.0 --no-save --ignore-scripts
 
 FROM deps AS builder
 

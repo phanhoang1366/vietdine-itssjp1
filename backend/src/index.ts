@@ -53,7 +53,7 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/chat', chatRoutes);
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' || process.env.PORT) {
   app.listen(PORT, () => {
     console.log(`🚀 Server ready at: http://localhost:${PORT}`);
   });
